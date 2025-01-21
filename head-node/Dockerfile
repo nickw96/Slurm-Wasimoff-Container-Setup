@@ -16,7 +16,7 @@
 # most recent version of that image when you build your Dockerfile.
 # If reproducibility is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine@sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
-FROM alpine:latest as base
+FROM ubuntu:latest as base
 
 ################################################################################
 # Create a stage for building/compiling the application.
@@ -27,10 +27,11 @@ FROM alpine:latest as base
 # executable. For language-specific examples, take a look at the Dockerfiles in
 # the Awesome Compose repository: https://github.com/docker/awesome-compose
 FROM base as build
-RUN echo -e '#!/bin/sh\n\
-echo Hello world from $(whoami)! In order to get your application running in a container, take a look at the comments in the Dockerfile to get started.'\
-> /bin/hello.sh
-RUN chmod +x /bin/hello.sh
+
+#RUN echo -e '#!/bin/sh\n\
+#echo Hello world from $(whoami)! In order to get your application running in a container, take a look at the comments in the Dockerfile to get started.'\
+#> /bin/hello.sh
+#RUN chmod +x /bin/hello.sh
 
 ################################################################################
 # Create a final stage for running your application.
@@ -45,6 +46,7 @@ FROM base AS final
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
+# add slurm user
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -53,11 +55,31 @@ RUN adduser \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
-    appuser
-USER appuser
+    slurm
+# get dependencies
+RUN apt update \
+apt -fy install munge
+COPY ../resources /var/tmp/
+RUN tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz \
+export PATH=$PATH:/usr/local/go/bin
+# TODO: muss explizit nach /bin/broker kopiert werden?
+# copy wasimoff broker
+COPY ../prototype/broker /bin/
+# setup slurm
+COPY ../slurm-packages /var/tmp/
+RUN apt -fy install /var/tmp/slurm-packages/*.deb
+RUN mkdir /etc/slurm
+# copy slurm.conf; TODO: add chown option
+COPY ../slurm-configuration/slurm.conf /etc/slurm/slurm.conf
+# startup script for async start of slurmctld and wasimoff broker
+COPY start_head.sh /bin/start_head.sh
+RUN chmod +x /bin/start_head.sh
+
+USER slurm
 
 # Copy the executable from the "build" stage.
-COPY --from=build /bin/hello.sh /bin/
+#COPY --from=build /bin/hello.sh /bin/
 
 # What the container should run when it is started.
-ENTRYPOINT [ "/bin/hello.sh" ]
+# TODO: Set entrypoint
+ENTRYPOINT [ "/bin/start_head.sh" ]

@@ -32,3 +32,5 @@
 **/values.dev.yaml
 LICENSE
 README.md
+../slurm-packages/slurm-smd-slurmd*
+../resources/deno_2_1_6
