@@ -54,8 +54,12 @@ RUN adduser \
     slurm
 # get dependencies
 RUN apt update \
-apt -fy install munge 
-COPY ../resources /var/tmp/
+apt -fy install munge \
+apt -fy install wget \
+apt -fy install unzip
+RUN wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip \
+unzip - /bin /var/tmp/deno-2-1-6.zip \
+chmod +x /bin/deno
 # TODO: muss explizit nach /bin/broker kopiert werden?
 # copy wasimoff denoprovider
 COPY ../prototype/denoprovider /bin/

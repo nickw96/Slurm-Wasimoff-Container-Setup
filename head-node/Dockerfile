@@ -58,9 +58,10 @@ RUN adduser \
     slurm
 # get dependencies
 RUN apt update \
-apt -fy install munge
-COPY ../resources /var/tmp/
-RUN tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz \
+apt -fy install munge \
+apt -fy install wget
+RUN wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz \
+tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz \
 export PATH=$PATH:/usr/local/go/bin
 # TODO: muss explizit nach /bin/broker kopiert werden?
 # copy wasimoff broker
