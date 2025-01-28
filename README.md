@@ -12,8 +12,9 @@ The experimental setup
 - -f "path to Dockerfile"
 - build at root of this project
 
-e.g. docker build -t jondoe/head_node:test1 -f head-node/Dockerfile .
-alternative: docker build -t jondoe/head_node:test1 --build-context repo=/home/jondoe/.../Slurm-Wasimoff-Container-Setup .
+### Building a controller image
+`docker build -t un/controller:0.0.0 --build-context repo=/home/.../Slurm-Wasimoff-Container-Setup/ controller-node/.`
+`docker build -t un/compute-node:0.0.0 --build-context repo=/home/.../Slurm-Wasimoff-Container-Setup/ compute-node/.`
 
 ## HOT TO RUN CONTAINERS
 - always -ti for debug purposes

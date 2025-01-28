@@ -27,14 +27,14 @@ RUN export PATH=$PATH:/usr/local/go/bin
 COPY --from=repo prototype/broker /bin/broker/
 # setup slurm
 RUN apt-get install -y build-essential fakeroot devscripts equivs
-COPY --from=repo --chmod=100 setup-slurm.sh /bin/setup-slurm.sh
-RUN /bin/setup-slurm.sh
+COPY --from=repo --chmod=100 slurm-resources/setup-slurm.sh /bin/setup-slurm.sh
+RUN /bin/setup-slurm.sh 'controller'
 RUN apt-get clean
 # copy slurm.conf; TODO: add chown option
-COPY --from=repo slurm-configuration/slurm.conf /etc/slurm/
+COPY --from=repo slurm-resources/slurm.conf /etc/slurm/
 # startup script for async start of slurmctld and wasimoff broker
-COPY start_head.sh /bin/start_head.sh
-RUN chmod +x /bin/start_head.sh
+COPY start_slurmctld.sh /bin/start_slurmctld.sh
+RUN chmod +x /bin/start_slurmctld.sh
 
 ################################################################################
 # Create a stage for building/compiling the application.

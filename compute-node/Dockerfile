@@ -21,20 +21,20 @@ FROM ubuntu:24.04 AS base
 RUN apt update
 RUN apt -fy install munge=0.5.15-4build1 wget=1.21.4-1ubuntu4 unzip=6.0-28ubuntu4
 RUN wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip
-RUN unzip - /bin /var/tmp/deno-2-1-6.zip
+RUN unzip -d /bin /var/tmp/deno-2-1-6.zip
 RUN chmod +x /bin/deno
 # copy wasimoff denoprovider
 COPY --from=repo prototype/denoprovider /bin/denoprovider
 ## setup slurm
 RUN apt-get install -y build-essential fakeroot devscripts equivs
-COPY --from=repo --chmod=100 setup-slurm.sh /bin/setup-slurm.sh
-RUN /bin/setup-slurm.sh
+COPY --from=repo --chmod=100 slurm-resources/setup-slurm.sh /bin/setup-slurm.sh
+RUN /bin/setup-slurm.sh 'compute'
 RUN apt-get clean
 # copy slurm.conf; TODO: add chown option
-COPY --from=repo slurm-configuration/slurm.conf /etc/slurm/
+COPY --from=repo slurm-resources/slurm.conf /etc/slurm/
 # startup script for slurmd
-COPY worker-node/start_head.sh /bin/start_worker.sh
-RUN chmod +x /bin/start_worker.sh
+COPY start_slurmd.sh /bin/start_slurmd.sh
+RUN chmod +x /bin/start_slurmd.sh
 ################################################################################
 # Create a stage for building/compiling the application.
 #
