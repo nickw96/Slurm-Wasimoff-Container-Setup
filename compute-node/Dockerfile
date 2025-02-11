@@ -33,8 +33,10 @@ RUN apt-get clean
 # copy slurm.conf; TODO: add chown option
 COPY --from=repo slurm-resources/slurm.conf /etc/slurm/
 # startup script for slurmd
-COPY start_slurmd.sh /bin/start_slurmd.sh
-RUN chmod +x /bin/start_slurmd.sh
+COPY start_compute_node.sh /bin/start_compute_node.sh
+RUN chmod +x /bin/start_compute_node.sh
+RUN mkdir /var/run/slurm
+RUN mkdir /var/spool/slurm
 ################################################################################
 # Create a stage for building/compiling the application.
 #
@@ -68,11 +70,13 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     slurm
+RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/
 USER slurm
+RUN chmod 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/run/slurm/slurmd.pid /var/spool/slurm/slurmd /var/log/slurm/slurmd.log
+USER root
 
 # Copy the executable from the "build" stage.
 
 
 # What the container should run when it is started.
-# ENTRYPOINT [ "/bin/start_worker.sh" ]
-ENTRYPOINT [ "/bin/bash" ]
+ENTRYPOINT [ "/bin/start_compute_node.sh" ]

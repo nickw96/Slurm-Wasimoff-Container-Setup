@@ -22,7 +22,6 @@ RUN apt update
 RUN apt -fy install munge=0.5.15-4build1 wget=1.21.4-1ubuntu4
 RUN wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
-RUN export PATH=$PATH:/usr/local/go/bin
 # copy wasimoff broker
 COPY --from=repo prototype/broker /bin/broker/
 # setup slurm
@@ -33,9 +32,10 @@ RUN apt-get clean
 # copy slurm.conf; TODO: add chown option
 COPY --from=repo slurm-resources/slurm.conf /etc/slurm/
 # startup script for async start of slurmctld and wasimoff broker
-COPY start_slurmctld.sh /bin/start_slurmctld.sh
-RUN chmod +x /bin/start_slurmctld.sh
-
+COPY start_controller_node.sh /bin/start_controller_node.sh
+RUN chmod +x /bin/start_controller_node.sh
+RUN mkdir /var/run/slurm
+RUN mkdir /var/spool/slurm
 ################################################################################
 # Create a stage for building/compiling the application.
 #
@@ -73,11 +73,16 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     slurm
+RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/
 USER slurm
+RUN > /var/run/slurm/slurmctld.pid
+RUN > /var/spool/slurm/slurmctld
+RUN > /var/log/slurm/slurmctld.log
+RUN chmod 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/run/slurm/slurmctld.pid /var/spool/slurm/slurmctld /var/log/slurm/slurmctld.log
+USER root
 
 # Copy the executable from the "build" stage.
 #COPY --from=build /bin/hello.sh /bin/
 # What the container should run when it is started.
 # TODO: Set entrypoint
-# ENTRYPOINT [ "/bin/start_head.sh" ]
-ENTRYPOINT [ "/bin/bash" ]
+ENTRYPOINT [ "/bin/start_controller_node.sh" ]

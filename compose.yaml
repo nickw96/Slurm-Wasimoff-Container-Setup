@@ -4,47 +4,55 @@ name: slurm-wasimoff-system
 
 services:
   controller:
-    image: niweil/controller:0.0.0
+    build:
+      context: .
+      target: controller
     cpu_count: 2
-    cpuset: 0,1
-    container_name: controller-node
+    cpuset: 0-1
+    container_name: controller
     hostname: controller
-    extra-hosts:
-      - "computer-a=127.0.0.3"
-      - "computer-b=127.0.0.4"
-    networks: 
-      mybridge:
-        ipv4-address: 127.0.0.2
-  compute-node-a:
-    image: niweil/compute-node:0.0.0
+    # stdin_open: true
+    # tty: true
+    # extra-hosts:
+    #   - "computer-a=127.0.0.3"
+    #   - "computer-b=127.0.0.4"
+    # networks: 
+    #   mybridge:
+    #     ipv4-address: 127.0.0.2
+  computer-a:
+    build:
+      context: .
+      target: computer
     cpu_count: 1
-    cpuset: 3 # adapt onto target system
+    cpuset: "3"
     container_name: compute-node-a
     hostname: computer-a
-    extra-hosts:
-      - "controller=127.0.0.2"
-      - "computer-b=127.0.0.4"
-    networks: 
-      mybridge:
-        ipv4-address: 127.0.0.3
+    # extra-hosts:
+    #   - "controller=127.0.0.2"
+    #   - "computer-b=127.0.0.4"
+    # networks: 
+    #   mybridge:
+    #     ipv4-address: 127.0.0.3
 
-  compute-node-b:
-    image: niweil/compute-node:0.0.0
+  computer-b:
+    build:
+      context: .
+      target: computer
     cpu_count: 1
-    cpuset: 4 # adapt onto target system
+    cpuset: "4"
     container_name: compute-node-b
     hostname: computer-b
-    extra-hosts:
-      - "controller=127.0.0.2"
-      - "computer-a=127.0.0.3"
-    networks: 
-      mybridge:
-        ipv4-address: 127.0.0.4
+    # extra-hosts:
+    #   - "controller=127.0.0.2"
+    #   - "computer-a=127.0.0.3"
+    # networks: 
+    #   mybridge:
+    #     ipv4-address: 127.0.0.4
 
 # TODO: add further configs if necessary
 # TODO: Add ipam with subnet config
-networks:
-  mybridge:
-    driver: bridge
-    config:
-      - subnet: 127.0.0.0/29
+# networks:
+#   mybridge:
+#     driver: bridge
+#     config:
+#       - subnet: 127.0.0.0/29
