@@ -60,9 +60,7 @@ RUN adduser \
 
 # transfer ownership to slurm user
 RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/
-USER slurm
-RUN chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
-USER root
+RUN sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
 
 FROM base AS computer
 # get and setup deno
@@ -74,13 +72,14 @@ COPY  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
 COPY  prototype/webprovider /bin/wasimoff_provider/webprovider/
 # setup slurm for compute node
 RUN apt install -fy /slurm-packages/slurm-smd-slurmd_24.11.1-1_amd64.deb
+# create missing, daemon specific directories
+RUN sudo -u slurm /var/spool/slurm/slurmd
 # RUN systemctl enable --now slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
-# COPY --chmod=100 compute-node/start_compute_node.sh /bin/start_compute_node.sh
 RUN echo -e '#!/bin/sh\n\
 sudo -u munge munged &\n\
-sleep 150\n\
+sleep 120\n\
 /bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080' > /bin/start_compute_node.sh
 # RUN echo "echo hello" > /bin/start_compute_node.sh
 RUN chmod 100 /bin/start_compute_node.sh
@@ -95,6 +94,8 @@ RUN tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
 COPY prototype/broker /bin/broker/
 # setup slurm for controller node
 RUN apt install -fy /slurm-packages/slurm-smd-slurmctld_24.11.1-1_amd64.deb
+# create missing, daemon specific directories
+RUN sudo -u slurm /var/spool/slurm/slurmctld
 # RUN systemctl enable --now slurmctld
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
