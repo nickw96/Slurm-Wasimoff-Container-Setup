@@ -2,11 +2,8 @@
 The experimental setup
 
 ## TODO
-1. Create /etc/hosts file; Add defined nodes
+1. Check out podman OR setup VM cluster
 2. Add Prolog and Epilog scripts to repo
-3. Check compose.yaml
-4. Bash scripts
-5. Make important files to non root user accessible
 
 ## HOW TO BUILD
 - use tags via -t (username/restofpath:tag)
