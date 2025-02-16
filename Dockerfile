@@ -20,7 +20,7 @@ FROM ubuntu:24.04 AS base
 # get dependencies
 SHELL [ "/bin/bash", "-c" ]
 RUN apt update
-RUN apt -fy install munge=0.5.15-4build1 wget=1.21.4-1ubuntu4 unzip=6.0-28ubuntu4 sudo iputils-ping
+RUN apt -fy install munge=0.5.15-4build1 wget=1.21.4-1ubuntu4 unzip=6.0-28ubuntu4 sudo iputils-ping dbus
 # RUN systemctl enable --now munge
 # setup munge
 RUN mkdir /run/munge ; chown -R munge: /run/munge
@@ -78,6 +78,7 @@ RUN sudo -u slurm /var/spool/slurm/slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
 RUN echo -e '#!/bin/sh\n\
+dbus-daemon &\
 sudo -u munge munged &\n\
 sleep 120\n\
 /bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080' > /bin/start_compute_node.sh
@@ -107,6 +108,7 @@ RUN rm -rf /slurm-packages
 # WASIMOFF_ALLOWED_ORIGINS="*" go run /bin/broker &' > /bin/start_controller_node.sh
 RUN echo -e '#!/bin/sh\n\
 export PATH=$PATH:/usr/local/go/bin \n\
+dbus-daemon &\
 sudo -u munge munged &\n\
 cd /bin/broker\n\
 WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
