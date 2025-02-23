@@ -27,7 +27,9 @@ RUN apt-get install -y build-essential fakeroot devscripts equivs
 # get munge by apt
 RUN apt -fy install munge && \
     systemctl disable munge && \
-    chown munge: /run/munge && sudo -u munge chmod 0755 /run/munge
+    mkdir /run/munge && \
+    chown munge: /run/munge && \
+    sudo -u munge chmod 0755 /run/munge
 # get munge by src
 # RUN mkdir /munge-src && \
 # wget -O /munge-src/munge-0.5.16.tar.xz https://github.com/dun/munge/releases/download/munge-0.5.16/munge-0.5.16.tar.xz
