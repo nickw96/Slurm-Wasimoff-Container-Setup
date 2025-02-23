@@ -25,65 +25,65 @@ RUN apt -fy install wget unzip iputils-ping dbus
 RUN apt-get install -y build-essential fakeroot devscripts equivs
 ## setup munge
 # get munge by apt
-RUN apt -fy install munge
-RUN systemctl disable munge
+RUN apt -fy install munge && \
+    systemctl disable munge && \
+    chown munge: /run/munge && sudo -u munge chmod 0755 /run/munge
 # get munge by src
-# RUN mkdir /munge-src
-# RUN wget -O /munge-src/munge-0.5.16.tar.xz https://github.com/dun/munge/releases/download/munge-0.5.16/munge-0.5.16.tar.xz
+# RUN mkdir /munge-src && \
+# wget -O /munge-src/munge-0.5.16.tar.xz https://github.com/dun/munge/releases/download/munge-0.5.16/munge-0.5.16.tar.xz
 # WORKDIR /munge-src
-# RUN tar xJf munge-0.5.16.tar.xz
-# RUN cd munge-0.5.16
-# RUN ./configure \
+# RUN tar xJf munge-0.5.16.tar.xz && \
+#   cd munge-0.5.16 && \
+#   ./configure \
 #     --prefix=/usr \
 #     --sysconfdir=/etc \
 #     --localstatedir=/var \
-#     --runstatedir=/run
-# RUN make
-# RUN make check
-# RUN sudo make install
+#     --runstatedir=/run && \
+#   make && \
+#   make check && \
+#   sudo make install
 # WORKDIR /
 # ARG UID=10000
 # RUN adduser \
 #     -c "MUNGE identifier"\
-#     -d /var/lib/munge\
+#     #--home-dir /var/lib/munge\
 #     --disabled-password \
 #     --gecos "" \
 #     --shell "/sbin/nologin" \
 #     --no-create-home \
 #     --uid "${UID}" \
 #     munge
-# RUN chown -R munge: /etc/munge /var/lib/munge /var/log/munge /run/munge
-# RUN sudo -u munge chmod -R 0755 /run/munge
-# RUN sudo -u munge chmod -R 0700 /etc/munge
-# RUN sudo -u munge chmod -R 0700 /var/lib/munge
-# RUN sudo -u munge chmod -R 0711 /var/lib/munge
-# RUN sudo -u munge /usr/sbin/mungekey --verbose
-# RUN sudo -u munge chmod -R 0600 /etc/munge/munge.key
+# RUN chown munge: /etc/munge /var/lib/munge /var/log/munge /run/munge && \
+# sudo -u munge chmod 0755 /run/munge && \
+# sudo -u munge chmod 0700 /etc/munge && \
+# sudo -u munge chmod 0700 /var/lib/munge && \
+# sudo -u munge chmod 0711 /var/lib/munge && \
+# sudo -u munge /usr/sbin/mungekey --verbose && \
+# sudo -u munge chmod 0600 /etc/munge/munge.key \
 # # RUN systemctl enable munge.service
 # copy slurm.conf
 COPY slurm-resources/slurm.conf /etc/slurm/
 # create slurm directories and files
-RUN mkdir /var/run/slurm
-RUN mkdir /var/spool/slurm
-RUN mkdir /var/log/slurm
-RUN > /var/run/slurm/slurmd.pid
-RUN > /var/spool/slurm/slurmd
-RUN > /var/log/slurm/slurmd.log
+RUN mkdir /var/run/slurm && \
+    mkdir /var/spool/slurm && \
+    mkdir /var/log/slurm && \
+    > /var/run/slurm/slurmd.pid && \
+    > /var/spool/slurm/slurmd && \
+    > /var/log/slurm/slurmd.log
 # general slurm stuff
-RUN mkdir /slurm-packages
-RUN wget -O /slurm-packages/slurm-24.11.1.tar.bz2 https://download.schedmd.com/slurm/slurm-24.11.1.tar.bz2
-RUN tar -C /slurm-packages -xaf /slurm-packages/slurm-24.11.1.tar.bz2
+RUN mkdir /slurm-packages && \
+    wget -O /slurm-packages/slurm-24.11.1.tar.bz2 https://download.schedmd.com/slurm/slurm-24.11.1.tar.bz2 && \
+    tar -C /slurm-packages -xaf /slurm-packages/slurm-24.11.1.tar.bz2
 WORKDIR /slurm-packages/slurm-24.11.1
-RUN mk-build-deps -i -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
-RUN debuild -b -uc -us
+RUN mk-build-deps -i -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control && \
+    debuild -b -uc -us
 WORKDIR /
-RUN apt install -fy /slurm-packages/slurm-smd_24.11.1-1_amd64.deb
-RUN apt install -fy /slurm-packages/slurm-smd-client_24.11.1-1_amd64.deb
+RUN apt install -fy /slurm-packages/slurm-smd_24.11.1-1_amd64.deb /slurm-packages/slurm-smd-client_24.11.1-1_amd64.deb
 #create slurm user
 ARG UID=10001
 RUN adduser \
     -c "SLURM Workload Manager"\
-    -d /var/lib/slurm\
+    # --home-dir /var/lib/slurm\
     --disabled-password \
     --gecos "" \
     --shell "/sbin/nologin" \
@@ -91,43 +91,42 @@ RUN adduser \
     --uid "${UID}" \
     slurm
 # transfer ownership to slurm user
-RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/
-RUN sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
+RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
+    sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
 
 FROM base AS computer
 # get and setup deno
-RUN wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip
-RUN unzip -d /bin /var/tmp/deno-2-1-6.zip
-RUN chmod +x /bin/deno
+RUN wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip && \
+    unzip -d /bin /var/tmp/deno-2-1-6.zip && \
+    chmod +x /bin/deno
 # copy wasimoff denoprovider
 COPY  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
 COPY  prototype/webprovider /bin/wasimoff_provider/webprovider/
 # setup slurm for compute node
 RUN apt install -fy /slurm-packages/slurm-smd-slurmd_24.11.1-1_amd64.deb
 # create missing, daemon specific directories
-RUN sudo -u slurm /var/spool/slurm/slurmd
+# RUN sudo -u slurm mkdir /var/spool/slurm/slurmd
 # RUN systemctl enable slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
 RUN echo -e '#!/bin/sh\n\
 sleep 90\n\
-/bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080' > /bin/start_compute_node.sh
-# RUN echo "echo hello" > /bin/start_compute_node.sh
-RUN chmod 100 /bin/start_compute_node.sh
+/bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080' > /bin/start_compute_node.sh && \
+    chmod 100 /bin/start_compute_node.sh
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_compute_node.sh"]
 
 
 FROM base AS controller
 # get and setup go
-RUN wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
-RUN tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
+RUN wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
 # copy wasimoff broker
 COPY prototype/broker /bin/broker/
 # setup slurm for controller node
 RUN apt install -fy /slurm-packages/slurm-smd-slurmctld_24.11.1-1_amd64.deb
 # create missing, daemon specific directories
-RUN sudo -u slurm /var/spool/slurm/slurmctld
+# RUN sudo -u slurm mkdir /var/spool/slurm/slurmctld
 # RUN systemctl enable slurmctld
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
@@ -135,7 +134,7 @@ RUN echo -e '#!/bin/sh\n\
 export PATH=$PATH:/usr/local/go/bin \n\
 cd /bin/broker\n\
 WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
-> /bin/start_controller_node.sh
-RUN chmod 100 /bin/start_controller_node.sh
+> /bin/start_controller_node.sh && \
+    chmod 100 /bin/start_controller_node.sh
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_controller_node.sh"]
