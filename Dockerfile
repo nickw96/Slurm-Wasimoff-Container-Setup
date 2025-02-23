@@ -106,7 +106,7 @@ COPY  prototype/webprovider /bin/wasimoff_provider/webprovider/
 RUN apt install -fy /slurm-packages/slurm-smd-slurmd_24.11.1-1_amd64.deb
 # create missing, daemon specific directories
 RUN sudo -u slurm /var/spool/slurm/slurmd
-# RUN systemctl enable --now slurmd
+# RUN systemctl enable slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
 RUN echo -e '#!/bin/sh\n\
@@ -128,15 +128,9 @@ COPY prototype/broker /bin/broker/
 RUN apt install -fy /slurm-packages/slurm-smd-slurmctld_24.11.1-1_amd64.deb
 # create missing, daemon specific directories
 RUN sudo -u slurm /var/spool/slurm/slurmctld
-# RUN systemctl enable --now slurmctld
+# RUN systemctl enable slurmctld
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
-# COPY --chmod=100 controller-node/start_controller_node.sh /bin/start_controller_node.sh
-# RUN echo -e '#!/bin/sh\
-# export PATH=$PATH:/usr/local/go/bin\
-# munge\
-# systemctl enable slurmctld\
-# WASIMOFF_ALLOWED_ORIGINS="*" go run /bin/broker &' > /bin/start_controller_node.sh
 RUN echo -e '#!/bin/sh\n\
 export PATH=$PATH:/usr/local/go/bin \n\
 cd /bin/broker\n\

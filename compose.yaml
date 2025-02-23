@@ -13,7 +13,7 @@ services:
     hostname: controller
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    priviliged: true>
+    priviliged: true
     # stdin_open: true
     # tty: true
     # extra-hosts:
@@ -32,7 +32,7 @@ services:
     hostname: computer-a
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    priviliged: true>
+    priviliged: true
     # extra-hosts:
     #   - "controller=127.0.0.2"
     #   - "computer-b=127.0.0.4"
@@ -50,7 +50,7 @@ services:
     hostname: computer-b
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    priviliged: true>
+    priviliged: true
     # extra-hosts:
     #   - "controller=127.0.0.2"
     #   - "computer-a=127.0.0.3"
