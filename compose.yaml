@@ -11,6 +11,9 @@ services:
     cpuset: 0-1
     container_name: controller
     hostname: controller
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    priviliged: true>
     # stdin_open: true
     # tty: true
     # extra-hosts:
@@ -27,6 +30,9 @@ services:
     cpuset: "3"
     container_name: compute-node-a
     hostname: computer-a
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    priviliged: true>
     # extra-hosts:
     #   - "controller=127.0.0.2"
     #   - "computer-b=127.0.0.4"
@@ -42,6 +48,9 @@ services:
     cpuset: "4"
     container_name: compute-node-b
     hostname: computer-b
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    priviliged: true>
     # extra-hosts:
     #   - "controller=127.0.0.2"
     #   - "computer-a=127.0.0.3"

@@ -16,19 +16,50 @@
 # most recent version of that image when you build your Dockerfile.
 # If reproducibility is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine@sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
-FROM ubuntu:24.04 AS base
-# get dependencies
+FROM trfore/docker-ubuntu2404-systemd:latest AS base
 SHELL [ "/bin/bash", "-c" ]
+# get dependencies
 RUN apt update
-RUN apt -fy install munge=0.5.15-4build1 wget=1.21.4-1ubuntu4 unzip=6.0-28ubuntu4 sudo iputils-ping dbus
-# RUN systemctl enable --now munge
-# setup munge
-RUN mkdir /run/munge ; chown -R munge: /run/munge
-RUN sudo -u munge chmod -R 0755 /run/munge
+RUN apt -fy install wget unzip iputils-ping dbus
 # setup slurm
 RUN apt-get install -y build-essential fakeroot devscripts equivs
-COPY --chmod=100 slurm-resources/setup-slurm.sh /bin/setup-slurm.sh
-RUN apt-get clean
+## setup munge
+# get munge by apt
+RUN apt -fy install munge
+RUN systemctl disable munge
+# get munge by src
+# RUN mkdir /munge-src
+# RUN wget -O /munge-src/munge-0.5.16.tar.xz https://github.com/dun/munge/releases/download/munge-0.5.16/munge-0.5.16.tar.xz
+# WORKDIR /munge-src
+# RUN tar xJf munge-0.5.16.tar.xz
+# RUN cd munge-0.5.16
+# RUN ./configure \
+#     --prefix=/usr \
+#     --sysconfdir=/etc \
+#     --localstatedir=/var \
+#     --runstatedir=/run
+# RUN make
+# RUN make check
+# RUN sudo make install
+# WORKDIR /
+# ARG UID=10000
+# RUN adduser \
+#     -c "MUNGE identifier"\
+#     -d /var/lib/munge\
+#     --disabled-password \
+#     --gecos "" \
+#     --shell "/sbin/nologin" \
+#     --no-create-home \
+#     --uid "${UID}" \
+#     munge
+# RUN chown -R munge: /etc/munge /var/lib/munge /var/log/munge /run/munge
+# RUN sudo -u munge chmod -R 0755 /run/munge
+# RUN sudo -u munge chmod -R 0700 /etc/munge
+# RUN sudo -u munge chmod -R 0700 /var/lib/munge
+# RUN sudo -u munge chmod -R 0711 /var/lib/munge
+# RUN sudo -u munge /usr/sbin/mungekey --verbose
+# RUN sudo -u munge chmod -R 0600 /etc/munge/munge.key
+# # RUN systemctl enable munge.service
 # copy slurm.conf
 COPY slurm-resources/slurm.conf /etc/slurm/
 # create slurm directories and files
@@ -51,13 +82,14 @@ RUN apt install -fy /slurm-packages/slurm-smd-client_24.11.1-1_amd64.deb
 #create slurm user
 ARG UID=10001
 RUN adduser \
+    -c "SLURM Workload Manager"\
+    -d /var/lib/slurm\
     --disabled-password \
     --gecos "" \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
     slurm
-
 # transfer ownership to slurm user
 RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/
 RUN sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
@@ -78,13 +110,12 @@ RUN sudo -u slurm /var/spool/slurm/slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
 RUN echo -e '#!/bin/sh\n\
-dbus-daemon &\
-sudo -u munge munged &\n\
-sleep 120\n\
+sleep 90\n\
 /bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080' > /bin/start_compute_node.sh
 # RUN echo "echo hello" > /bin/start_compute_node.sh
 RUN chmod 100 /bin/start_compute_node.sh
-ENTRYPOINT ["/bin/start_compute_node.sh"]
+RUN apt-get clean
+# ENTRYPOINT ["/bin/start_compute_node.sh"]
 
 
 FROM base AS controller
@@ -108,10 +139,9 @@ RUN rm -rf /slurm-packages
 # WASIMOFF_ALLOWED_ORIGINS="*" go run /bin/broker &' > /bin/start_controller_node.sh
 RUN echo -e '#!/bin/sh\n\
 export PATH=$PATH:/usr/local/go/bin \n\
-dbus-daemon &\
-sudo -u munge munged &\n\
 cd /bin/broker\n\
 WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
 > /bin/start_controller_node.sh
 RUN chmod 100 /bin/start_controller_node.sh
-ENTRYPOINT ["/bin/start_controller_node.sh"]
+RUN apt-get clean
+# ENTRYPOINT ["/bin/start_controller_node.sh"]
