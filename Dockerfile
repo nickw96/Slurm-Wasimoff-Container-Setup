@@ -26,52 +26,16 @@ RUN apt-get install -y build-essential fakeroot devscripts equivs
 ## setup munge
 # get munge by apt
 RUN apt -fy install munge && \
-    systemctl disable munge && \
-    mkdir /run/munge && \
-    chown munge: /run/munge && \
-    sudo -u munge chmod 0755 /run/munge
-# get munge by src
-# RUN mkdir /munge-src && \
-# wget -O /munge-src/munge-0.5.16.tar.xz https://github.com/dun/munge/releases/download/munge-0.5.16/munge-0.5.16.tar.xz
-# WORKDIR /munge-src
-# RUN tar xJf munge-0.5.16.tar.xz && \
-#   cd munge-0.5.16 && \
-#   ./configure \
-#     --prefix=/usr \
-#     --sysconfdir=/etc \
-#     --localstatedir=/var \
-#     --runstatedir=/run && \
-#   make && \
-#   make check && \
-#   sudo make install
-# WORKDIR /
-# ARG UID=10000
-# RUN adduser \
-#     -c "MUNGE identifier"\
-#     #--home-dir /var/lib/munge\
-#     --disabled-password \
-#     --gecos "" \
-#     --shell "/sbin/nologin" \
-#     --no-create-home \
-#     --uid "${UID}" \
-#     munge
-# RUN chown munge: /etc/munge /var/lib/munge /var/log/munge /run/munge && \
-# sudo -u munge chmod 0755 /run/munge && \
-# sudo -u munge chmod 0700 /etc/munge && \
-# sudo -u munge chmod 0700 /var/lib/munge && \
-# sudo -u munge chmod 0711 /var/lib/munge && \
-# sudo -u munge /usr/sbin/mungekey --verbose && \
-# sudo -u munge chmod 0600 /etc/munge/munge.key \
-# # RUN systemctl enable munge.service
+    systemctl disable munge
 # copy slurm.conf
 COPY slurm-resources/slurm.conf /etc/slurm/
 # create slurm directories and files
-RUN mkdir /var/run/slurm && \
-    mkdir /var/spool/slurm && \
-    mkdir /var/log/slurm && \
-    > /var/run/slurm/slurmd.pid && \
-    > /var/spool/slurm/slurmd && \
-    > /var/log/slurm/slurmd.log
+# RUN mkdir /var/run/slurm && \
+#     mkdir /var/spool/slurm && \
+#     mkdir /var/log/slurm && \
+#     > /var/run/slurm/slurmd.pid && \
+#     > /var/spool/slurm/slurmd && \
+#     > /var/log/slurm/slurmd.log
 # general slurm stuff
 RUN mkdir /slurm-packages && \
     wget -O /slurm-packages/slurm-24.11.1.tar.bz2 https://download.schedmd.com/slurm/slurm-24.11.1.tar.bz2 && \
@@ -93,8 +57,8 @@ RUN adduser \
     --uid "${UID}" \
     slurm
 # transfer ownership to slurm user
-RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
-    sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
+# RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
+#     sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
 
 FROM base AS computer
 # get and setup deno
@@ -111,9 +75,24 @@ RUN apt install -fy /slurm-packages/slurm-smd-slurmd_24.11.1-1_amd64.deb
 # RUN systemctl enable slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
-RUN echo -e '#!/bin/sh\n\
-sleep 90\n\
-/bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080' > /bin/start_compute_node.sh && \
+RUN echo -e '#!/bin/bash\n\
+mkdir /run/munge && \
+chown -R munge: /run/munge && \
+sudo -u munge chmod -R 0755 /run/munge \
+mkdir /var/run/slurm && \
+    mkdir /var/spool/slurm && \
+    mkdir /var/log/slurm && \
+    > /var/run/slurm/slurmd.pid && \
+    > /var/spool/slurm/slurmd && \
+    > /var/log/slurm/slurmd.log \
+chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
+    sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd \
+sudo -u munge /usr/sbin/munged & \
+    sleep 10 \
+slurmd &'\
+# sleep 60\n\
+# /bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080'\
+> /bin/start_compute_node.sh && \
     chmod 100 /bin/start_compute_node.sh
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_compute_node.sh"]
@@ -131,11 +110,26 @@ RUN apt install -fy /slurm-packages/slurm-smd-slurmctld_24.11.1-1_amd64.deb
 # RUN sudo -u slurm mkdir /var/spool/slurm/slurmctld
 # RUN systemctl enable slurmctld
 RUN rm -rf /slurm-packages
-# copy startup script for slurmd
-RUN echo -e '#!/bin/sh\n\
-export PATH=$PATH:/usr/local/go/bin \n\
-cd /bin/broker\n\
-WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
+# copy startup script for slurmctld
+RUN echo -e '#!/bin/bash\n\
+# create neccessary directories with correct ownership
+mkdir /run/munge && \
+chown -R munge: /run/munge && \
+sudo -u munge chmod -R 0755 /run/munge \
+mkdir /var/run/slurm && \
+    mkdir /var/spool/slurm && \
+    mkdir /var/log/slurm && \
+    > /var/run/slurm/slurmctld.pid && \
+    > /var/spool/slurm/slurmctld && \
+    > /var/log/slurm/slurmctld.log \
+chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
+    sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmctld \
+sudo -u munge /usr/sbin/munged & \
+    sleep 10 \
+slurmctld &'\
+# export PATH=$PATH:/usr/local/go/bin \n\
+# cd /bin/broker\n\
+# WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
 > /bin/start_controller_node.sh && \
     chmod 100 /bin/start_controller_node.sh
 RUN apt-get clean
