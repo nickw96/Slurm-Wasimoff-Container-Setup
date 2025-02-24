@@ -75,25 +75,8 @@ RUN apt install -fy /slurm-packages/slurm-smd-slurmd_24.11.1-1_amd64.deb
 # RUN systemctl enable slurmd
 RUN rm -rf /slurm-packages
 # copy startup script for slurmd
-RUN echo -e '#!/bin/bash\n\
-mkdir /run/munge && \
-chown -R munge: /run/munge && \
-sudo -u munge chmod -R 0755 /run/munge \
-mkdir /var/run/slurm && \
-    mkdir /var/spool/slurm && \
-    mkdir /var/log/slurm && \
-    > /var/run/slurm/slurmd.pid && \
-    > /var/spool/slurm/slurmd && \
-    > /var/log/slurm/slurmd.log \
-chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
-    sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd \
-sudo -u munge /usr/sbin/munged & \
-    sleep 10 \
-slurmd &'\
-# sleep 60\n\
-# /bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080'\
-> /bin/start_compute_node.sh && \
-    chmod 100 /bin/start_compute_node.sh
+COPY --chmod=100 compute-node/start_compute_node.sh /bin/start_compute_node.sh
+# chmod 100 /bin/start_compute_node.sh
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_compute_node.sh"]
 
@@ -111,26 +94,8 @@ RUN apt install -fy /slurm-packages/slurm-smd-slurmctld_24.11.1-1_amd64.deb
 # RUN systemctl enable slurmctld
 RUN rm -rf /slurm-packages
 # copy startup script for slurmctld
-RUN echo -e '#!/bin/bash\n\
+COPY --chmod=100 controller-node/start_controller_node.sh /bin/start_controller_node.sh
 # create neccessary directories with correct ownership
-mkdir /run/munge && \
-chown -R munge: /run/munge && \
-sudo -u munge chmod -R 0755 /run/munge \
-mkdir /var/run/slurm && \
-    mkdir /var/spool/slurm && \
-    mkdir /var/log/slurm && \
-    > /var/run/slurm/slurmctld.pid && \
-    > /var/spool/slurm/slurmctld && \
-    > /var/log/slurm/slurmctld.log \
-chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
-    sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmctld \
-sudo -u munge /usr/sbin/munged & \
-    sleep 10 \
-slurmctld &'\
-# export PATH=$PATH:/usr/local/go/bin \n\
-# cd /bin/broker\n\
-# WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
-> /bin/start_controller_node.sh && \
-    chmod 100 /bin/start_controller_node.sh
+# chmod 100 /bin/start_controller_node.sh
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_controller_node.sh"]
