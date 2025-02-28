@@ -17,7 +17,7 @@
 # If reproducibility is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine@sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
 FROM trfore/docker-ubuntu2404-systemd:latest AS base
-SHELL [ "/bin/bash", "-c" ]
+# SHELL [ "/bin/bash", "-c" ]
 # get dependencies
 RUN apt update
 RUN apt -fy install wget unzip iputils-ping dbus
