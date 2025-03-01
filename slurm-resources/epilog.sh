@@ -1,1 +1,2 @@
+#!/bin/bash
 /bin/deno run --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080'\

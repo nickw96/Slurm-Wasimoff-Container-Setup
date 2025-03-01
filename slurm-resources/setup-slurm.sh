@@ -1,3 +1,4 @@
+#!/bin/bash
 apt install -y build-essential fakeroot devscripts equivs
 mkdir slurm-packages
 wget -O slurm-packages/slurm-24.11.1.tar.bz2 https://download.schedmd.com/slurm/slurm-24.11.1.tar.bz2
