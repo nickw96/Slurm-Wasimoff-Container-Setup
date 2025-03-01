@@ -14,6 +14,6 @@ sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/l
 sudo -u munge /usr/sbin/munged &
 sleep 10
 slurmctld &
-# export PATH=$PATH:/usr/local/go/bin \n\
-# cd /bin/broker\n\
-# WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./'\
+export PATH=$PATH:/usr/local/go/bin
+cd /bin/broker
+WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./
