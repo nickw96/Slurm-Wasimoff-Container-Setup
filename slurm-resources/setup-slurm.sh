@@ -1,10 +1,10 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
 echo "\
-192.168.2.98       controller\n\
+192.168.2.98       controller\
 192.168.2.97       compute-node\
 " >> /etc/hosts
-apt install -fy unzip munge slurm-wlm slurm-wlm-basic-plugins slurm-wlm-doc slurm-client
+apt install -fy unzip munge slurm-client
 if [ "$1" = 'controller' ]; then
     apt install -fy slurmctld
     wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
@@ -19,7 +19,7 @@ elif [ "$1" = 'compute' ]; then
     cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
     cp -r  prototype/webprovider /bin/wasimoff_provider/webprovider/
 fi
-cp slurm-resources/slurm.conf /etc/slurm/slurm.conf
+# cp slurm-resources/slurm.conf /etc/slurm/slurm.conf
 cp slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp slurm-resources/epilog.sh /etc/slurm/epilog.sh
 # adduser \
