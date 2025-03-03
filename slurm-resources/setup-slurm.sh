@@ -2,7 +2,7 @@
 # EXECUTE ONLY IN REPO
 if [ "$2" = 'first' ]; then
     echo "192.168.2.98       controller" >> /etc/hosts
-    echo "192.168.2.97       computer" >> /etc/hosts
+    echo "192.168.2.97       computer-a" >> /etc/hosts
 fi
 apt install -fy slurm-client
 if [ "$1" = 'controller' ]; then
