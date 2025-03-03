@@ -11,3 +11,6 @@ Aufbau Slurm-Wasimoff auf Containerbasis:
   - Unabhängig von der Wahl des Werts von `ProctrackType` konnte mittels podman kein slurmd ausgeführt werden
 
 Aufbau Slurm-Wasimoff in VMs:
+- Bridge Netzwerk potentiell am geeignetesten
+- Wasimoff potentiell direkt einsatzfähilg
+- Bauen von Slurm aus Sourcen scheinbar wieder umständlich -> Umschwung auf apt
