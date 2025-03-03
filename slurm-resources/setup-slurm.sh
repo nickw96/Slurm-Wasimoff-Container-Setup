@@ -1,10 +1,10 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
-if [ "$2" = 'first']; then
+if [ "$2" = 'first' ]; then
     echo "192.168.2.98       controller" >> /etc/hosts
     echo "192.168.2.97       computer" >> /etc/hosts
 fi
-apt install -fy unzip munge slurm-client
+apt install -fy slurm-client
 if [ "$1" = 'controller' ]; then
     apt install -fy slurmctld
     touch /var/slurmctld.pid
@@ -12,7 +12,7 @@ if [ "$1" = 'controller' ]; then
     tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
     cp -r prototype/broker /bin/broker/
 elif [ "$1" = 'compute' ]; then
-    apt install -fy slurmd
+    apt install -fy slurmd unzip
     touch /var/slurmd.pid
     wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip
     unzip -d /bin /var/tmp/deno-2-1-6.zip
