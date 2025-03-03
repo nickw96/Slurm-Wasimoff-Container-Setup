@@ -19,7 +19,8 @@ elif [ "$1" = 'compute' ]; then
     cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
     cp -r  prototype/webprovider /bin/wasimoff_provider/webprovider/
 fi
-# cp slurm-resources/slurm.conf /etc/slurm/slurm.conf
+cp slurm-resources/slurm.conf /etc/slurm/slurm.conf
+cp slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
 cp slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp slurm-resources/epilog.sh /etc/slurm/epilog.sh
 # adduser \
