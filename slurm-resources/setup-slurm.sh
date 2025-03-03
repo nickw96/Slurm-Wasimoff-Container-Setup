@@ -1,8 +1,8 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
 echo "\
-192.168.2.105      controller\n\
-192.168.2.96       compute-node\
+192.168.2.98       controller\n\
+192.168.2.97       compute-node\
 " >> /etc/hosts
 apt install -fy unzip munge slurm-wlm slurm-wlm-basic-plugins slurm-wlm-doc slurm-client
 if [ "$1" = 'controller' ]; then
