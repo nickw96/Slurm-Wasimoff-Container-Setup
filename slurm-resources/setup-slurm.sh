@@ -15,6 +15,7 @@ elif [ "$1" = 'compute' ]; then
     wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip
     unzip -d /bin /var/tmp/deno-2-1-6.zip
     chmod +x /bin/deno
+    mkdir /bin/wasimoff_provider
     cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
     cp -r  prototype/webprovider /bin/wasimoff_provider/webprovider/
 fi
