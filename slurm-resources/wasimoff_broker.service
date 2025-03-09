@@ -1,0 +1,14 @@
+[Unit]
+Description=Starting the wasimoff broker
+#After=
+Before=slurmctld.service
+
+[Service]
+ExecStart=~/Slurm-Wasimoff-Container-Setup/controller-node/start_controller_node.sh
+#ExecReload=
+Type=simple
+#Restart=
+
+[Install]
+WantedBy=default.target
+RequiredBy=slurmctld.service

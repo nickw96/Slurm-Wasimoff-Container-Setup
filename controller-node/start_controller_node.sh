@@ -16,4 +16,6 @@
 # slurmctld &
 export PATH=$PATH:/usr/local/go/bin
 cd /bin/broker
-WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=controller:4080 go run ./
+# get the ipv4 address of controller
+wasimoff_host=$(getent ahostsv4 controller | grep STREAM | sed -n '2p' | awk '{print $1}')
+WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$(wasimoff_host):4080 go run ./
