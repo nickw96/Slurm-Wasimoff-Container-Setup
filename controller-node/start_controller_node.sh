@@ -17,5 +17,4 @@
 export PATH=$PATH:/usr/local/go/bin
 cd /bin/broker
 # get the ipv4 address of controller
-wasimoff_host=$(getent ahostsv4 controller | grep STREAM | sed -n '2p' | awk '{print $1}')
-WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$(wasimoff_host):4080 go run ./
+WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$(getent ahostsv4 controller | grep STREAM | sed -n '2p' | awk '{print $1}'):4080 go run ./
