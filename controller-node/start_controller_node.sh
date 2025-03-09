@@ -14,7 +14,7 @@
 # sudo -u munge /usr/sbin/munged &
 # sleep 10
 # slurmctld &
-export PATH=$PATH:/usr/local/go/bin
+# export PATH=$PATH:/usr/local/go/bin
 cd /bin/broker
 # get the ipv4 address of controller
 WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$(getent ahostsv4 controller | grep STREAM | sed -n '2p' | awk '{print $1}'):4080 go run ./
