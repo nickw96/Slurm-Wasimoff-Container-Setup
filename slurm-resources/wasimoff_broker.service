@@ -4,7 +4,7 @@ Description=Starting the wasimoff broker
 Before=slurmctld.service
 
 [Service]
-ExecStart=~/Slurm-Wasimoff-Container-Setup/controller-node/start_controller_node.sh
+ExecStart=/usr/bin/bash /bin/broker/start_controller_node.sh
 #ExecReload=
 Type=simple
 #Restart=

@@ -11,6 +11,7 @@ if [ "$1" = 'controller' ]; then
     wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
     tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
     cp -r prototype/broker /bin/broker/
+    cp controller-node/start_controller_node.sh /bin/broker/start_controller_node.sh
     cp slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
 elif [ "$1" = 'compute' ]; then
     apt install -fy slurmd unzip
