@@ -1,2 +1,2 @@
 #!/bin/bash
-/bin/deno run --allow-env --allow-read=./ --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080
+/bin/deno run --allow-env --allow-read= --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080
