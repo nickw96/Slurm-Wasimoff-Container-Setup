@@ -1,7 +1,7 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
-controllerip="$3"
-computeraip="$4"
+controllerip=$3
+computeraip=$4
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
     echo "$computeraip      computer-a" >> /etc/hosts
@@ -17,7 +17,8 @@ if [ "$1" = 'controller' ]; then
     go build ./
     cd ../..
     cp prototype/broker/broker /bin/
-    echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_controller_node.sh
+    echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_broker.sh
+    chmod 744 /bin/start_broker.sh
     cp slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
     systemctl daemon-reload
     systemctl enable wasimoff_broker.service
