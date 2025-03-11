@@ -13,6 +13,7 @@ if [ "$1" = 'controller' ]; then
     wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
     tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
     echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
+    export PATH=$PATH:/usr/local/go/bin
     cd prototype/broker
     go build ./
     cd ../..
