@@ -30,6 +30,7 @@ elif [ "$1" = 'compute' ]; then
     mkdir /bin/wasimoff_provider
     cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
     cp -r  prototype/webprovider /bin/wasimoff_provider/webprovider/
+    cp slurm-resources/wasimoff_provider.service /etc/systemd/system/wasimoff_provider.service
 fi
 mkdir /run/slurm/
 mkdir /var/spool/slurm
