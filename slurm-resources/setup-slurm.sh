@@ -1,7 +1,7 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
-controllerip="192.168.2.100"
-computeraip="192.168.2.101"
+controllerip="$3"
+computeraip="$4"
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
     echo "$computeraip      computer-a" >> /etc/hosts
