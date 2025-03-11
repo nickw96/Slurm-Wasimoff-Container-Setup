@@ -13,4 +13,11 @@ Aufbau Slurm-Wasimoff auf Containerbasis:
 Aufbau Slurm-Wasimoff in VMs:
 - Bridge Netzwerk potentiell am geeignetesten
 - Wasimoff potentiell direkt einsatzfähilg
-- Bauen von Slurm aus Sourcen scheinbar wieder umständlich -> Umschwung auf apt
+- Bauen von Slurm aus Sourcen scheinbar wieder umständlich -> Umschwung auf apt -> Deutlich erfolgreicher
+- Wasimoff Broker als Service theoretisch möglich, jedoch in der Umsetzung bisher Schwierigkeiten bzw. Service nicht erfolgreich gestartet und somit auch nicht der Broker
+ - Nachträgliches Starten vom Broker denkbar, nur wie?
+ - Als Service, jedoch Bauen des Broker über `go build` notwendig
+ - Statisches Setzen der IP bisher notwendig
+- Wasimoff Provider kann nicht einfach von Epilog aufgerufen werden, da sonst Epilog nicht abgeschlossen werden kann
+ - Provider über https://unix.stackexchange.com/questions/3886/difference-between-nohup-disown-and abkoppeln beinahe erfolgreich
+ - Provider über Service unklar
