@@ -1,10 +1,10 @@
 [Unit]
 Description=Starting the wasimoff broker
 #After=
-#Before=slurmctld.service
+Before=slurmctld.service
 
 [Service]
-ExecStart=WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$(getent ahostsv4 controller | grep STREAM | sed -n '2p' | awk '{print $1}'):4080 go run ./
+ExecStart=/usr/bin/bash /bin/start_broker.sh
 #ExecReload=
 Type=simple
 #Restart=

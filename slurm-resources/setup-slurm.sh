@@ -1,8 +1,10 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
+controllerip="192.168.2.100"
+computeraip="192.168.2.101"
 if [ "$2" = 'first' ]; then
-    echo "192.168.2.100      controller" >> /etc/hosts
-    echo "192.168.2.101      computer-a" >> /etc/hosts
+    echo "$controllerip      controller" >> /etc/hosts
+    echo "$computeraip      computer-a" >> /etc/hosts
 fi
 apt install -fy slurm-client
 if [ "$1" = 'controller' ]; then
@@ -11,8 +13,14 @@ if [ "$1" = 'controller' ]; then
     wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
     tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
     echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
-    cp -r prototype/broker /bin/broker/
+    cd prototype/broker
+    go build ./
+    cd ../..
+    cp prototype/broker/broker /bin/
+    echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_controller_node.sh
     cp slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
+    systemctl daemon-reload
+    systemctl enable wasimoff_broker.service
 elif [ "$1" = 'compute' ]; then
     apt install -fy slurmd unzip
     touch /var/slurmd.pid
