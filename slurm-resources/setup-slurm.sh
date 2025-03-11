@@ -15,7 +15,7 @@ if [ "$1" = 'controller' ]; then
     echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
     export PATH=$PATH:/usr/local/go/bin
     cd prototype/broker
-    go build ./
+    go build -buildvcs=false ./
     cd ../..
     cp prototype/broker/broker /bin/
     echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_broker.sh
