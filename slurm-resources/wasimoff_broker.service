@@ -5,6 +5,7 @@ Before=slurmctld.service
 
 [Service]
 ExecStart=/usr/bin/bash /bin/start_broker.sh
+#ExecStop=ps aux | grep broker | grep -v grep | awk '{print "kill " $2}' | sh
 #ExecReload=
 Type=simple
 #Restart=
