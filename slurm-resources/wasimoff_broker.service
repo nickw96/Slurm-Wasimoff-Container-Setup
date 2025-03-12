@@ -5,10 +5,14 @@ Before=slurmctld.service
 
 [Service]
 ExecStart=/usr/bin/bash /bin/start_broker.sh
-ExecStop=ps aux | grep broker | grep -v grep | awk '{print "kill " $2}' | sh
+#ExecStop=
 #ExecReload=
 Type=simple
 #Restart=
+
+[Kill]
+KillMode=control-group
+KillSignal=SIGTERM
 
 [Install]
 WantedBy=default.target
