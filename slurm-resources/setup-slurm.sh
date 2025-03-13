@@ -2,9 +2,13 @@
 # EXECUTE ONLY IN REPO
 controllerip=$3
 computeraip=$4
+computerbip=$5
+computercip=$6
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
     echo "$computeraip      computer-a" >> /etc/hosts
+    echo "$computerbip      computer-b" >> /etc/hosts
+    echo "$computercip      computer-c" >> /etc/hosts
 fi
 apt install -fy slurm-client
 if [ "$1" = 'controller' ]; then
@@ -42,13 +46,4 @@ cp slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp slurm-resources/epilog.sh /etc/slurm/epilog.sh
 chown -R slurm: /etc/slurm/ /run/slurm/ /var/spool/slurm/
 sudo -u slurm chmod -R 0755 /etc/slurm/ /run/slurm/ /var/spool/slurm/
-# adduser \
-#     -c "SLURM Workload Manager"\
-#     # --home-dir /var/lib/slurm\
-#     --disabled-password \
-#     --gecos "" \
-#     --shell "/sbin/nologin" \
-#     --no-create-home \
-#     --uid 100 \
-#     slurm
 apt-get clean
