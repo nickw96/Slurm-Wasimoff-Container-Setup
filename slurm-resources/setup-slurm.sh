@@ -22,8 +22,8 @@ if [ "$1" = 'controller' ]; then
     go build -buildvcs=false ./
     cd ../..
     cp prototype/broker/broker /bin/
-    echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_broker.sh
-    chmod 744 /bin/start_broker.sh
+    # echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_broker.sh
+    # chmod 744 /bin/start_broker.sh
     cp slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
     systemctl daemon-reload
     systemctl enable wasimoff_broker.service
