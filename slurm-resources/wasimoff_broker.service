@@ -4,11 +4,14 @@ Description=Starting the wasimoff broker
 Before=slurmctld.service
 
 [Service]
-ExecStart=/usr/bin/bash /bin/start_broker.sh
+ExecStart=/bin/broker
 #ExecStop=
 #ExecReload=
-Type=simple
+Type=exec
 #Restart=
+Environment="WASIMOFF_ALLOWED_ORIGINS=\"*\""
+#TODO create .service file during setup script
+Environment="WASIMOFF_HTTP_LISTEN=$controllerip:4080"
 
 [Kill]
 KillMode=control-group
