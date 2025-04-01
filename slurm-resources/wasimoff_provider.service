@@ -9,8 +9,6 @@ ExecStart=/bin/deno run --allow-env --allow-read --allow-net /bin/wasimoff_provi
 #ExecReload=
 Type=exec
 #Restart=
-
-[Kill]
 KillMode=control-group
 KillSignal=SIGTERM
 
