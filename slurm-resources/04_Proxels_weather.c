@@ -12,6 +12,7 @@
 #include <math.h> 
 #include <malloc.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define MINPROB      1.0e-12
@@ -435,8 +436,9 @@ double lpm2hpm(double age) {
 int main(int argc, char **argv) {
     int     k, j, kmax;
     proxel *currproxel;
-    double  val, z;
+    double  tmax, val, z;
     int     s, tau1k; //, tau2k;
+    char *end = NULL;
 
     /* initialise the simulation */
     root[0] = NULL;
@@ -444,8 +446,28 @@ int main(int argc, char **argv) {
     eerror=0.0;
     totcnt  = 0;
     maxccp  = 0;
-	double tmax = ENDTIME;
+
+    tmax = ENDTIME;
     dt = DELTA;
+
+    if (argc >= 2)
+    {
+        for (int i = 1; i < argc; i = i + 2)
+        {
+            if (strcmp("-dt", argv[i]) == 0)
+            {
+                dt = strtod(argv[i+1], &end);
+            }
+            else if (strcmp("-endtime", argv[i]) == 0)
+            {
+                tmax = strtod(argv[i+1], &end);
+            }
+        }
+    }
+
+    printf("dt = %f\n",dt);
+    printf("endtime = %f\n",tmax);
+
     kmax=tmax/dt+1;
     for (k = 0; k < 3; k++) {
         y[k] = malloc(sizeof(double)*(kmax+2));
