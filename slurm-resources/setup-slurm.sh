@@ -10,7 +10,7 @@ if [ "$2" = 'first' ]; then
     echo "$computerbip      computer-b" >> /etc/hosts
     echo "$computercip      computer-c" >> /etc/hosts
 fi
-apt install -fy slurm-client
+apt install -fy munge slurm-client build-essentials gfortran
 if [ "$1" = 'controller' ]; then
     apt install -fy slurmctld
     touch /var/slurmctld.pid
