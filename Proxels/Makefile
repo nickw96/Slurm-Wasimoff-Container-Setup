@@ -8,10 +8,10 @@ default: all
 all: proxels proxels_wasm
 
 proxels:
-	gcc 04_Proxels_weather.c -o Proxels -lm
+	gcc 04_Proxels_weather.c -o proxels -lm
 
 proxels_wasm:
-	$(CC) 04_Proxels_weather.c -o Proxels.wasm
+	$(CC) 04_Proxels_weather.c -o proxels.wasm
 
 clean:
-	rm Proxels Proxels.wasm
+	rm proxels proxels.wasm
