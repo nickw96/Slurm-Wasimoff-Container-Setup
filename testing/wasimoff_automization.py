@@ -33,3 +33,6 @@ def main():
         for call in call_list:
             if call.poll() != None:
                 running_calls = running_calls - 1
+
+if __name__ == "__main__":
+    main()

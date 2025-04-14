@@ -18,7 +18,7 @@ WASI_SPAWN=$!
 
 # sbatch -N(#Knoten) -w (für spezielle Knoten, eigentlich unwichtig) -D (Pfad zum Ausführungsverzeichnis) -o (Ausgabe falls erwünscht) script.sh
 num=1
-until [ $num == 20 ]; do
+until [ $num == 21 ]; do
     i=$(($RANDOM % 3 + 1))
     j=$(($RANDOM % 3 + 1))
     sbatch -N$i -o job_$num.txt jobs/job_$j.sh
@@ -27,6 +27,6 @@ done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
 srun -N3 -d afterany:$jobs date +"%Y-%m-%d %H-%M-%S" | sed -e '1!d' >> log_$date_of_start.txt
-# kill $WASI_SPAWN
+kill $WASI_SPAWN
 
 # Hinweis: Potentiell alle Pfade absolut angeben; Anwendungen müssen auf das Netzlaufwerk kopiert werden bzw. Symlinks in /bin/ (?)
