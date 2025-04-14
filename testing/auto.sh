@@ -10,7 +10,7 @@ go run client.go -upload ../../slurm-resources/proxels.wasm
 cd ../..
 
 date_of_start=$(date +"%Y-%m-%d_%H-%M-%S")
-echo "Reihe gestart: $(date +"%Y-%m-%d %H-%M-%S")" >> log_$date_of_start.txt
+echo "Reihe gestart: $(date +"%Y-%m-%d %H-%M-%S")" >> ../log_$date_of_start.txt
 
 # start program in background to randomly generate wasimoff tasks
 python3 testing/wasimoff_automization.py &
@@ -26,7 +26,7 @@ until [ $num == 21 ]; do
 done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
-srun -N3 -d afterany:$jobs date +"%Y-%m-%d %H-%M-%S" | sed -e '1!d' >> log_$date_of_start.txt
+srun -N3 -d afterany:$jobs date +"%Y-%m-%d %H-%M-%S" | sed -e '1!d' >> ../log_$date_of_start.txt
 kill $WASI_SPAWN
 
 # Hinweis: Potentiell alle Pfade absolut angeben; Anwendungen müssen auf das Netzlaufwerk kopiert werden bzw. Symlinks in /bin/ (?)
