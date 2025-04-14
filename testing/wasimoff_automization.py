@@ -5,9 +5,9 @@ import random
 
 def main():
     try:
-        os.chdir("./prototype/client")
+        os.chdir("./Slurm-Wasimoff-Container-Setup/prototype/client")
     except OSError:
-        raise SystemExit("Start script while being in ~/Slurm-Wasioff-Container-Setup")
+        raise SystemExit("Start script while being in ~")
 
     random.seed(42)
     call_list = []

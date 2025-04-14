@@ -7,13 +7,13 @@ RANDOM=1
 cd Slurm-Wasimoff-Container-Setup/prototype/client
 go run client.go -upload examples/tsp/tsp.wasm
 go run client.go -upload ../../Proxels/proxels.wasm
-cd ../..
+cd ../../..
 
 date_of_start=$(date +"%Y-%m-%d_%H-%M-%S")
 echo "Reihe gestart: $(date +"%Y-%m-%d %H-%M-%S")" >> ../log_$date_of_start.txt
 
 # start program in background to randomly generate wasimoff tasks
-python3 testing/wasimoff_automization.py &
+python3 Slurm-Wasimoff-Container-Setup/testing/wasimoff_automization.py &
 WASI_SPAWN=$!
 
 # sbatch -N(#Knoten) -w (für spezielle Knoten, eigentlich unwichtig) -D (Pfad zum Ausführungsverzeichnis) -o (Ausgabe falls erwünscht) script.sh
