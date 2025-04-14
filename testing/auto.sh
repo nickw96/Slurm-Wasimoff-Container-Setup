@@ -18,10 +18,10 @@ WASI_SPAWN=$!
 
 # sbatch -N(#Knoten) -w (für spezielle Knoten, eigentlich unwichtig) -D (Pfad zum Ausführungsverzeichnis) -o (Ausgabe falls erwünscht) script.sh
 num=1
-until [ $num == 21 ]; do
+until [ $num == 11 ]; do
     i=$(($RANDOM % 3 + 1))
     j=$(($RANDOM % 3 + 1))
-    sbatch -N$i -o job_$num.txt jobs/job_$j.sh
+    sbatch -N$i -o job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
     num=$(($num + 1))
     sleep $(($RANDOM % 5 + 1))
 done
