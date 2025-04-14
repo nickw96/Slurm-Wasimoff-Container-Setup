@@ -10,7 +10,8 @@ if [ "$2" = 'first' ]; then
     echo "$computerbip      computer-b" >> /etc/hosts
     echo "$computercip      computer-c" >> /etc/hosts
 fi
-apt install -fy munge slurm-client build-essentials gfortran
+apt install -fy munge slurm-client build-essentials gfortran python3 curl
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 if [ "$1" = 'controller' ]; then
     apt install -fy slurmctld
     touch /var/slurmctld.pid
