@@ -33,6 +33,7 @@ def main():
         for call in call_list:
             if call.poll() != None:
                 running_calls = running_calls - 1
+        time.sleep(random.randint(1,5))
 
 if __name__ == "__main__":
     main()

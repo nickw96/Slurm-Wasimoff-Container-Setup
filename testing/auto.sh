@@ -23,6 +23,7 @@ until [ $num == 21 ]; do
     j=$(($RANDOM % 3 + 1))
     sbatch -N$i -o job_$num.txt jobs/job_$j.sh
     num=$(($num + 1))
+    sleep $(($RANDOM % 5 + 1))
 done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
