@@ -20,14 +20,14 @@ def main():
     endtimes = [500, 1000, 2000, 5000, 10000]
     while True:
         while running_calls < 50:
-            if randint(1,2) == 1:
+            if random.randint(1,2) == 1:
                 # tsp
-                towns = randint(10,13)
+                towns = random.randint(10,13)
                 call_list.append(sb.Popen(["go", "run", "client.go", "-exec", "tsp.wasm", "rand", "f{towns}"]))
             else:
                 # proxels
-                dt = randint(0,3)
-                endtime = randint(0,4)
+                dt = random.randint(0,3)
+                endtime = random.randint(0,4)
                 call_list.append(sb.Popen(["go", "run", "client.go", "-exec", "proxels.wasm", "-dt", "f{dt}", "-endtime", "f{endtime}"]))
             running_calls = running_calls + 1
         for call in call_list:

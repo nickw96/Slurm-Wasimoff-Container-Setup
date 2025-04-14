@@ -6,7 +6,7 @@ RANDOM=1
 # müssen in client verzeichnis aufgerufen werden
 cd Slurm-Wasimoff-Container-Setup/prototype/client
 go run client.go -upload examples/tsp/tsp.wasm
-go run client.go -upload ../../slurm-resources/proxels.wasm
+go run client.go -upload ../../Proxels/proxels.wasm
 cd ../..
 
 date_of_start=$(date +"%Y-%m-%d_%H-%M-%S")
