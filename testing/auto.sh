@@ -5,8 +5,8 @@ RANDOM=1
 
 # müssen in client verzeichnis aufgerufen werden
 cd Slurm-Wasimoff-Container-Setup/prototype/client
-go run client.go -upload examples/tsp/tsp.wasm
-go run client.go -upload ../../Proxels/proxels.wasm
+./client -upload examples/tsp/tsp.wasm
+./client -upload ../../Proxels/proxels.wasm
 cd ../../..
 
 date_of_start=$(date +"%Y-%m-%d_%H-%M-%S")
@@ -21,13 +21,13 @@ num=1
 until [ $num == 11 ]; do
     i=$(($RANDOM % 3 + 1))
     j=$(($RANDOM % 3 + 1))
-    sbatch -N$i -o job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
+    sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
     num=$(($num + 1))
     sleep $(($RANDOM % 5 + 1))
 done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
-srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +"%Y-%m-%d %H-%M-%S")" | sed -e '1!d' >> log_$date_of_start.txt
+srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +'%Y-%m-%d %H-%M-%S')" | sed -e '1!d' >> log_$date_of_start.txt
 kill $WASI_SPAWN
 
 # Hinweis: Potentiell alle Pfade absolut angeben; Anwendungen müssen auf das Netzlaufwerk kopiert werden bzw. Symlinks in /bin/ (?)

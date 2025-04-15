@@ -23,12 +23,12 @@ def main():
             if random.randint(1,2) == 1:
                 # tsp
                 towns = random.randint(10,13)
-                call_list.append(sb.Popen(["go", "run", "client.go", "-exec", "tsp.wasm", "rand", "f{towns}"]))
+                call_list.append(sb.Popen(["./client", "-exec", "tsp.wasm", "rand", "f{towns}"]))
             else:
                 # proxels
                 dt = random.randint(0,3)
                 endtime = random.randint(0,4)
-                call_list.append(sb.Popen(["go", "run", "client.go", "-exec", "proxels.wasm", "-dt", "f{dt}", "-endtime", "f{endtime}"]))
+                call_list.append(sb.Popen(["./client", "-exec", "proxels.wasm", "-dt", "f{dt}", "-endtime", "f{endtime}"]))
             running_calls = running_calls + 1
         for call in call_list:
             if call.poll() != None:
