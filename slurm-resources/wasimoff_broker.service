@@ -8,7 +8,8 @@ ExecStart=/bin/broker
 #ExecStop=
 #ExecReload=
 Type=exec
-#Restart=
+Restart=on-failure
+RestartMode=normal
 Environment="WASIMOFF_ALLOWED_ORIGINS=\"*\""
 #TODO create .service file during setup script
 Environment="WASIMOFF_HTTP_LISTEN=:4080"
