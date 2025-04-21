@@ -1,5 +1,5 @@
 [Unit]
-Description=Starting the wasimoff broker
+Description=Starting the wasimoff provider
 #After=
 #Before=
 
