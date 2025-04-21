@@ -10,7 +10,8 @@ cd Slurm-Wasimoff-Container-Setup/prototype/client
 cd ../../..
 
 date_of_start=$(date +"%Y-%m-%d_%H-%M-%S")
-echo "Reihe gestart: $(date +"%Y-%m-%d %H-%M-%S")" >> log_$date_of_start.txt
+# echo "Reihe gestart: $(date +"%Y-%m-%d %H-%M-%S")" >> log_$date_of_start.txt
+echo "$(date +"%Y-%m-%d %H:%M:%S")" >> server/log_$date_of_start.txt
 
 # start program in background to randomly generate wasimoff tasks
 python3 Slurm-Wasimoff-Container-Setup/testing/wasimoff_automization.py &
@@ -27,7 +28,8 @@ until [ $num == 11 ]; do
 done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
-srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +'%Y-%m-%d %H-%M-%S')" | sed -e '1!d' >> log_$date_of_start.txt
+# srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +'%Y-%m-%d %H-%M-%S')" | sed -e '1!d' >> log_$date_of_start.txt
+srun -N3 -d afterany:$jobs echo "$(date +'%Y-%m-%d %H:%M:%S')" | sed -e '1!d' >> server/log_$date_of_start.txt
 kill $WASI_SPAWN
 
 # Hinweis: Potentiell alle Pfade absolut angeben; Anwendungen müssen auf das Netzlaufwerk kopiert werden bzw. Symlinks in /bin/ (?)
