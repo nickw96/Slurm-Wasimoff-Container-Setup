@@ -29,7 +29,7 @@ def main():
                 # proxels
                 dt = random.randint(0,3)
                 endtime = random.randint(0,3)
-                call_list.append(sb.Popen(["./client", "-exec", "proxels.wasm", "-dt", f"{dt}", "-endtime", f"{endtime}"]))
+                call_list.append(sb.Popen(["./client", "-exec", "proxels.wasm", "-dt", f"{dts[dt]}", "-endtime", f"{endtimes[endtime]]}"]))
             running_calls = running_calls + 1
         for call in call_list:
             if call.poll() != None:
