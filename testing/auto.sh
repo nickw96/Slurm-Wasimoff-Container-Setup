@@ -31,5 +31,3 @@ jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
 # srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +'%Y-%m-%d %H-%M-%S')" | sed -e '1!d' >> log_$date_of_start.txt
 srun -N3 -d afterany:$jobs echo "$(date +'%Y-%m-%d %H:%M:%S')" | sed -e '1!d' >> server/log_$date_of_start.txt
 kill $WASI_SPAWN
-
-# Hinweis: Potentiell alle Pfade absolut angeben; Anwendungen müssen auf das Netzlaufwerk kopiert werden bzw. Symlinks in /bin/ (?)
