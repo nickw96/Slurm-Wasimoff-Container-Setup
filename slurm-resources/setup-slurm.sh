@@ -23,16 +23,14 @@ if [ "$1" = 'controller' ]; then
     go build -buildvcs=false ./
     cd ../..
     cp prototype/broker/broker /bin/
-    # echo "WASIMOFF_ALLOWED_ORIGINS="*" WASIMOFF_HTTP_LISTEN=$controllerip:4080 /bin/broker" >> /bin/start_broker.sh
-    # chmod 744 /bin/start_broker.sh
     cp slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
     systemctl daemon-reload
     systemctl enable wasimoff_broker.service
 elif [ "$1" = 'compute' ]; then
     apt install -fy slurmd unzip
     touch /var/slurmd.pid
-    wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip
-    unzip -d /bin /var/tmp/deno-2-1-6.zip
+    wget -O /var/tmp/deno-2-2-11.zip https://github.com/denoland/deno/releases/download/v2.2.11/deno-x86_64-unknown-linux-gnu.zip
+    unzip -d /bin /var/tmp/deno-2-2-11.zip
     chmod +x /bin/deno
     mkdir /bin/wasimoff_provider
     cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
