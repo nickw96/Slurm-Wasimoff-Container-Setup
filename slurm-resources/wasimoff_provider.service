@@ -4,7 +4,7 @@ Description=Starting the wasimoff provider
 #Before=
 
 [Service]
-ExecStart=/bin/deno run --allow-env --allow-read --allow-net /bin/wasimoff_provider/denoprovider/main.ts --workers 2 --url http://controller:4080
+ExecStart=/bin/deno run --allow-env --allow-read --allow-net /wasimoff_system/denoprovider/main.ts --workers 2 --url http://controller:4080
 #ExecStop=
 #ExecReload=
 Type=exec

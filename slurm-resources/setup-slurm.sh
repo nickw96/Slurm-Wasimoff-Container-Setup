@@ -4,6 +4,7 @@ controllerip=$3
 computeraip=$4
 computerbip=$5
 computercip=$6
+apt update
 apt install -fy munge slurm-client build-essential gfortran python3 curl
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 if [ "$1" = 'controller' ]; then
@@ -18,7 +19,7 @@ if [ "$1" = 'controller' ]; then
     cd prototype/broker
     go build -buildvcs=false ./
     cd ../..
-    cp prototype/broker/broker /bin/
+    # cp prototype/broker/broker /bin/
     cp slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
 elif [ "$1" = 'compute' ]; then
     if [ "$2" = 'first' ]; then
@@ -29,8 +30,8 @@ elif [ "$1" = 'compute' ]; then
         unzip -d /bin /var/tmp/deno-2-2-11.zip
         chmod +x /bin/deno
     fi
-    cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
-    cp -r  prototype/webprovider /bin/wasimoff_provider/webprovider/
+    # cp -r  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
+    # cp -r  prototype/webprovider /bin/wasimoff_provider/webprovider/
     cp slurm-resources/wasimoff_provider.service /etc/systemd/system/wasimoff_provider.service
 fi
 systemctl daemon-reload
@@ -44,11 +45,10 @@ if [ "$2" = 'first' ]; then
     mkdir /var/spool/slurm
     chown -R slurm: /etc/slurm/ /run/slurm/ /var/spool/slurm/
     sudo -u slurm chmod -R 0755 /etc/slurm/ /run/slurm/ /var/spool/slurm/
+    ln -s $(pwd)/prototype /wasimoff_system
 fi
-if [ "$2" = 'first' ]; then
-    cp slurm-resources/slurm.conf /etc/slurm/slurm.conf
-    cp slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
-    cp slurm-resources/prolog.sh /etc/slurm/prolog.sh
-    cp slurm-resources/epilog.sh /etc/slurm/epilog.sh
-fi
+cp slurm-resources/slurm.conf /etc/slurm/slurm.conf
+cp slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
+cp slurm-resources/prolog.sh /etc/slurm/prolog.sh
+cp slurm-resources/epilog.sh /etc/slurm/epilog.sh
 apt-get clean
