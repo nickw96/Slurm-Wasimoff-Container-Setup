@@ -4,6 +4,7 @@ Description=Starting the wasimoff broker
 Before=slurmctld.service
 
 [Service]
+# ExecStart=/bin/broker
 ExecStart=/wasimoff_system/broker/broker
 #ExecStop=
 #ExecReload=
