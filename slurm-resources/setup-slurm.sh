@@ -36,6 +36,7 @@ elif [ "$1" = 'compute' ]; then
 fi
 systemctl daemon-reload
 systemctl enable wasimoff_broker.service
+systemctl enable wasimoff_provider.service
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
     echo "$computeraip      computer-a" >> /etc/hosts
