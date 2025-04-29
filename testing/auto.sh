@@ -19,9 +19,9 @@ echo "$(date +"%Y-%m-%d %H:%M:%S")" >> server/log_$date_of_start.txt
 
 # sbatch -N(#Knoten) -w (für spezielle Knoten, eigentlich unwichtig) -D (Pfad zum Ausführungsverzeichnis) -o (Ausgabe falls erwünscht) script.sh
 num=1
-until [ $num == 11 ]; do
+until [ $num == 51 ]; do
     i=$(($RANDOM % 3 + 1))
-    j=$(($RANDOM % 3 + 1))
+    j=$(($RANDOM % 9 + 1))
     sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
     num=$(($num + 1))
     sleep $(($RANDOM % 5 + 1))
