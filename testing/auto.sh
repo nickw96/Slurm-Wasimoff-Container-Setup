@@ -29,5 +29,6 @@ done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
 # srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +'%Y-%m-%d %H-%M-%S')" | sed -e '1!d' >> log_$date_of_start.txt
-srun -N3 -d afterany:$jobs echo "$(date +'%Y-%m-%d %H:%M:%S')" | sed -e '1!d' >> server/log_$date_of_start.txt
+# Frage, wann und wo wird 'date' ausgeführt? Evtl. erst srun mit unwichtigem job und DANN echo mit Zeitstempel!
+srun -N3 -d afterany:$jobs date +'%Y-%m-%d %H:%M:%S' | sed -e '1!d' >> server/log_$date_of_start.txt
 kill $WASI_SPAWN
