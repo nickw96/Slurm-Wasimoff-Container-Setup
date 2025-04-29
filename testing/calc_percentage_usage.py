@@ -46,6 +46,9 @@ def main():
         # check if provider is currently active
         if "deno" in firstline_split[4] or ("systemd" in firstline_split[4] and "Start" in firstline_split[5]):
             state = True
+        else:
+            periods[-1]["end"] = datetime.strptime(f"2025 {firstline_split[0]} {firstline_split[1]} {firstline_split[2]}",
+                        "%Y %b %d %H:%M:%S")
 
         for line in ([firstline] + list(logfile)):
             line_split = line.split()
@@ -66,25 +69,24 @@ def main():
 
     with open(f"{args.log}.csv", 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['period','start','end','duration','proc_duration']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        csvwriter.writeheader()
         for i in range(0,len(periods)):
             period_duration = (periods[i]["end"] - periods[i]["start"]).total_seconds()
             proc_duration = period_duration / observation_duration
             wasimoff_usage = wasimoff_usage + proc_duration
-            writer.writerow({'period' : i+1,
+            csvwriter.writerow({'period' : i+1,
                 'start' : periods[i]["start"].strftime('%d/%m/%Y %H:%M:%S'),
                 'end' : periods[i]["end"].strftime('%d/%m/%Y %H:%M:%S'),
                 'duration' : period_duration,
                 'proc_duration' : proc_duration})
         
-        # TODO: maybe use another file writer instead
-        writer.writerow({'period' : "total duration of observation",
-                'start' : observation_duration})
-        writer.writerow({'period' : "wasimoff node usage",
-                'start' : wasimoff_usage})
-        writer.writerow({'period' : "slurm node usage",
-                'start' : 1.0 - wasimoff_usage})
+        writer = csv.writer(csvfile)
+        writer.writerow(["total duration of observation in s", observation_duration])
+        writer.writerow(["wasimoff node usage in %", wasimoff_usage])
+        writer.writerow(["slurm node usage in %", 1.0 - wasimoff_usage])
+        writer.writerow(["number of succesful wasimoff tasks", num_succesful_jobs])
+        writer.writerow(["wasimoff throughput in job/s", num_succesful_jobs/observation_duration])
 
 
 if __name__ == '__main__':
