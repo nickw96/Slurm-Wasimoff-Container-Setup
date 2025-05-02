@@ -48,7 +48,7 @@ if [ "$2" = 'first' ]; then
     sudo -u slurm chmod -R 0755 /etc/slurm/ /run/slurm/ /var/spool/slurm/
     ln -s $(pwd)/prototype /wasimoff_system
 fi
-case $1 in
+case $3 in
     builtin)
         cp -f slurm-resources/slurm_builtin.conf /etc/slurm/slurm.conf
         ;;

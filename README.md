@@ -18,3 +18,8 @@ The experimental setup
 - always -ti for debug purposes
 - use --name with (controller-*) and (compute-node-*)
 - -h or --hostname string, for host name (import for /etc/)
+
+## SETUP VMs
+- Create VMs via VM tool, e.g. *virtualbox* or *vmware*
+- Get git on nodes and setup ssh for git
+- Run setup-slurm.sh with arguments `sudo setup-slurm.sh <controller|compute> <first|> <builtin|backfill|gang|preempt> <controller-ip> <controller-ip> <com0-ip> <com1-ip> <com2-ip>`
