@@ -1,9 +1,9 @@
 #!/bin/bash
 # EXECUTE ONLY IN REPO
-controllerip=$3
-computeraip=$4
-computerbip=$5
-computercip=$6
+controllerip=$4
+com0ip=$5
+com1ip=$6
+com2ip=$7
 apt update
 apt install -fy munge slurm-client build-essential gfortran python3 curl
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -39,16 +39,29 @@ systemctl enable wasimoff_broker.service
 systemctl enable wasimoff_provider.service
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
-    echo "$computeraip      computer-a" >> /etc/hosts
-    echo "$computerbip      computer-b" >> /etc/hosts
-    echo "$computercip      computer-c" >> /etc/hosts
+    echo "$com0ip            com1" >> /etc/hosts
+    echo "$com1ip            com2" >> /etc/hosts
+    echo "$com2ip            com3" >> /etc/hosts
     mkdir /run/slurm/
     mkdir /var/spool/slurm
     chown -R slurm: /etc/slurm/ /run/slurm/ /var/spool/slurm/
     sudo -u slurm chmod -R 0755 /etc/slurm/ /run/slurm/ /var/spool/slurm/
     ln -s $(pwd)/prototype /wasimoff_system
 fi
-cp -f slurm-resources/slurm.conf /etc/slurm/slurm.conf
+case $1 in
+    builtin)
+        cp -f slurm-resources/slurm_builtin.conf /etc/slurm/slurm.conf
+        ;;
+    backfill)
+        cp -f slurm-resources/slurm_backfill.conf /etc/slurm/slurm.conf
+        ;;
+    gang)
+        cp -f slurm-resources/slurm_gang.conf /etc/slurm/slurm.conf
+        ;;
+    preempt)
+        cp -f slurm-resources/slurm_preempt.conf /etc/slurm/slurm.conf
+        ;;
+esac
 cp -f slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
 cp -f slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp -f slurm-resources/epilog.sh /etc/slurm/epilog.sh

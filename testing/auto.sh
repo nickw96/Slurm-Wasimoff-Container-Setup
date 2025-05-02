@@ -14,21 +14,28 @@ python3 Slurm-Wasimoff-Container-Setup/testing/wasimoff_automation.py &
 WASI_SPAWN=$!
 
 date_of_start=$(date +"%Y-%m-%d_%H-%M-%S")
-# echo "Reihe gestart: $(date +"%Y-%m-%d %H-%M-%S")" >> log_$date_of_start.txt
 echo "$(date +"%Y-%m-%d %H:%M:%S")" >> server/log_$date_of_start.txt
 
-# sbatch -N(#Knoten) -w (für spezielle Knoten, eigentlich unwichtig) -D (Pfad zum Ausführungsverzeichnis) -o (Ausgabe falls erwünscht) script.sh
+# sbatch -N(#nodes) -w (specific nodes) -D (path to working dir) -o (output if desired) script.sh
 num=1
 until [ $num == 51 ]; do
     i=$(($RANDOM % 3 + 1))
     j=$(($RANDOM % 9 + 1))
-    sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
+    if [ $1 == "preempt" ]; then
+        k=$(($RANDOM % 2))
+        if [ k > 0 ]; then
+            sbatch -N$i -p highPrio -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
+        else
+            sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
+        fi
+    else
+        sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$j.sh
+    fi
     num=$(($num + 1))
     sleep $(($RANDOM % 5 + 1))
 done
 
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
-# srun -N3 -d afterany:$jobs echo "Reihe beendet: $(date +'%Y-%m-%d %H-%M-%S')" | sed -e '1!d' >> log_$date_of_start.txt
-# Frage, wann und wo wird 'date' ausgeführt? Evtl. erst srun mit unwichtigem job und DANN echo mit Zeitstempel!
+# get end of observation
 srun -N3 -d afterany:$jobs date +'%Y-%m-%d %H:%M:%S' | sed -e '1!d' >> server/log_$date_of_start.txt
 kill $WASI_SPAWN
