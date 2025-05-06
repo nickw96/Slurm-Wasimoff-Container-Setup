@@ -36,9 +36,9 @@ elif [ "$1" = 'compute' ]; then
 fi
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
-    echo "$com0ip            com1" >> /etc/hosts
-    echo "$com1ip            com2" >> /etc/hosts
-    echo "$com2ip            com3" >> /etc/hosts
+    echo "$com0ip            com0" >> /etc/hosts
+    echo "$com1ip            com1" >> /etc/hosts
+    echo "$com2ip            com2" >> /etc/hosts
     mkdir /run/slurm/
     mkdir /var/spool/slurm
     chown -R slurm: /etc/slurm/ /run/slurm/ /var/spool/slurm/
