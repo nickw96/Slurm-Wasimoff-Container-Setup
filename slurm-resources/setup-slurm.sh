@@ -34,9 +34,6 @@ elif [ "$1" = 'compute' ]; then
     cp -fr  prototype/webprovider /bin/wasimoff_provider/webprovider/
     cp -f slurm-resources/wasimoff_provider.service /etc/systemd/system/wasimoff_provider.service
 fi
-systemctl daemon-reload
-systemctl enable wasimoff_broker.service
-systemctl enable wasimoff_provider.service
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
     echo "$com0ip            com1" >> /etc/hosts
@@ -65,4 +62,7 @@ esac
 cp -f slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
 cp -f slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp -f slurm-resources/epilog.sh /etc/slurm/epilog.sh
+systemctl daemon-reload
+systemctl enable wasimoff_broker.service
+systemctl enable wasimoff_provider.service
 apt-get clean

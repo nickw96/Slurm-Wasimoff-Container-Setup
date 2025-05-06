@@ -2,8 +2,9 @@
 The experimental setup
 
 ## TODO
-1. Check out podman OR setup VM cluster
-2. Add Prolog and Epilog scripts to repo
+1. Test current setup
+2. Figure out server utilization measurement
+3. Check if current vm setup can be translated to container setup
 
 ## HOW TO BUILD
 - use tags via -t (username/restofpath:tag)
