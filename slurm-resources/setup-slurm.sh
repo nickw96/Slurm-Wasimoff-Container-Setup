@@ -16,11 +16,13 @@ if [ "$1" = 'controller' ]; then
         echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
         export PATH=$PATH:/usr/local/go/bin
     fi
+    export PATH=$PATH:/usr/local/go/bin
     cd prototype/broker
     go build -buildvcs=false ./
     cd ../..
     cp -f prototype/broker/broker /bin/
     cp -f slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
+    systemctl enable wasimoff_broker.service
 elif [ "$1" = 'compute' ]; then
     if [ "$2" = 'first' ]; then
         apt install -fy slurmd unzip
@@ -33,6 +35,7 @@ elif [ "$1" = 'compute' ]; then
     cp -fr  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
     cp -fr  prototype/webprovider /bin/wasimoff_provider/webprovider/
     cp -f slurm-resources/wasimoff_provider.service /etc/systemd/system/wasimoff_provider.service
+    systemctl enable wasimoff_provider.service
 fi
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
@@ -58,11 +61,12 @@ case $3 in
     preempt)
         cp -f slurm-resources/slurm_preempt.conf /etc/slurm/slurm.conf
         ;;
+    gang-preempt)
+        cp -f slurm-resources/slurm_gang_preempt.conf /etc/slurm/slurm.conf
+        ;;
 esac
 cp -f slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
 cp -f slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp -f slurm-resources/epilog.sh /etc/slurm/epilog.sh
 systemctl daemon-reload
-systemctl enable wasimoff_broker.service
-systemctl enable wasimoff_provider.service
 apt-get clean

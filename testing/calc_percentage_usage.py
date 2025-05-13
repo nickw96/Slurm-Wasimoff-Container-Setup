@@ -28,6 +28,10 @@ def main():
     state = False
     num_succesful_jobs = 0
     wasimoff_usage = 0.0
+    provider_active_jobs = 0
+    provider_active_jobs_last = 0
+    active_periods = []
+    total_active = 0
 
     # Create datetime objects from timestamps
     with open(args.timestamp_file, 'r', encoding='utf-8') as timestamps:
@@ -51,11 +55,16 @@ def main():
                         "%Y %b %d %H:%M:%S")
 
         for line in ([firstline] + list(logfile)):
+            provider_active_jobs_last = provider_active_jobs
             line_split = line.split()
             if state:
-                if "[RPCHandler] connect/" in line:
+                if "Job completed" in line:
                     num_succesful_jobs = num_succesful_jobs + 1
+                    provider_active_jobs = provider_active_jobs - 1
+                elif "Start Job" in line:
+                    provider_active_jobs = provider_active_jobs + 1
                 elif "Stopping wasimoff_provider.service" in line:
+                    provider_active_jobs = 0
                     state = False
                     periods[-1]["end"] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
                         "%Y %b %d %H:%M:%S")
@@ -63,28 +72,45 @@ def main():
                     state = True
                     periods.append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
                         "%Y %b %d %H:%M:%S")})
+                    active_periods.append([])
+            
+            if provider_active_jobs_last == 0 and provider_active_jobs > provider_active_jobs_last:
+                active_periods[-1].append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                        "%Y %b %d %H:%M:%S")})
+            elif provider_active_jobs == 0 and provider_active_jobs_last > provider_active_jobs:
+                active_periods[-1][-1]["end"] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                        "%Y %b %d %H:%M:%S")
 
     if not "end" in periods[-1].keys():
         periods[-1]["end"] = observation_end
 
+    # TODO Add active periods to get usage
     with open(f"{args.log}.csv", 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['period','start','end','duration','proc_duration']
+        fieldnames = ['period','start','end','duration','duration_perc','active','active_perc']
         csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
         csvwriter.writeheader()
         for i in range(0,len(periods)):
             period_duration = (periods[i]["end"] - periods[i]["start"]).total_seconds()
-            proc_duration = period_duration / observation_duration
-            wasimoff_usage = wasimoff_usage + proc_duration
+            duration_perc = period_duration / observation_duration
+            wasimoff_usage = wasimoff_usage + duration_perc
+            active_duration = 0 
+            for j in len(active_periods[i]):
+                active_duration = active_duration + (active_duration[i][j]["end"] - active_duration[i][j]["start"]).total_seconds()
+            active_duration_perc = active_duration / observation_duration
+            total_active = total_active + active_duration
             csvwriter.writerow({'period' : i+1,
                 'start' : periods[i]["start"].strftime('%d/%m/%Y %H:%M:%S'),
                 'end' : periods[i]["end"].strftime('%d/%m/%Y %H:%M:%S'),
                 'duration' : period_duration,
-                'proc_duration' : proc_duration})
+                'duration_perc' : duration_perc,
+                'active' : active_duration,
+                'active_perc' : active_duration_perc})
         
         writer = csv.writer(csvfile)
         writer.writerow(["total duration of observation in s", observation_duration])
-        writer.writerow(["wasimoff node usage in %", wasimoff_usage])
-        writer.writerow(["slurm node usage in %", 1.0 - wasimoff_usage])
+        writer.writerow(["wasimoff node active in %", wasimoff_usage])
+        writer.writerow(["wasimoff node running in %", total_active / observation_duration])
+        writer.writerow(["slurm node active in %", 1.0 - wasimoff_usage])
         writer.writerow(["number of succesful wasimoff tasks", num_succesful_jobs])
         writer.writerow(["wasimoff throughput in job/s", num_succesful_jobs/observation_duration])
 
