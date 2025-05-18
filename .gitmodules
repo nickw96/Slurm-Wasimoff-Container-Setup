@@ -1,6 +1,6 @@
 [submodule "prototype"]
 	path = prototype
-	url = https://github.com/wasimoff/prototype
+	url = https://github.com/nickw96/wasimoff
 	branch = rework
 [submodule "CloverLeaf_Serial"]
 	path = CloverLeaf_Serial
