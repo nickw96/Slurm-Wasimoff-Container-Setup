@@ -6,7 +6,9 @@ com1ip=$6
 com2ip=$7
 apt update
 apt install -fy munge slurm-client build-essential gfortran python3 curl
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+if [ "$2" = 'first' ]; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+fi
 if [ "$1" = 'controller' ]; then
     if [ "$2" = 'first' ]; then
         apt install -fy slurmctld
@@ -20,9 +22,13 @@ if [ "$1" = 'controller' ]; then
     cd prototype/broker
     go build -buildvcs=false ./
     cd ../..
-    cp -f prototype/broker/broker /bin/
+    # cp -f prototype/broker/broker /bin/
     cp -f slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
-    systemctl enable wasimoff_broker.service
+    if [[ $3 == *"_pure"* ]]; then
+        systemctl disable wasimoff_broker.service
+    else
+        systemctl enable wasimoff_broker.service
+    fi
 elif [ "$1" = 'compute' ]; then
     if [ "$2" = 'first' ]; then
         apt install -fy slurmd unzip
@@ -32,10 +38,14 @@ elif [ "$1" = 'compute' ]; then
         unzip -d /bin /var/tmp/deno-2-2-11.zip
         chmod +x /bin/deno
     fi
-    cp -fr  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
-    cp -fr  prototype/webprovider /bin/wasimoff_provider/webprovider/
+    #cp -fr  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
+    #cp -fr  prototype/webprovider /bin/wasimoff_provider/webprovider/
     cp -f slurm-resources/wasimoff_provider.service /etc/systemd/system/wasimoff_provider.service
-    systemctl enable wasimoff_provider.service
+    if [[ $3 == *"_pure"* ]]; then
+        systemctl disable wasimoff_provider.service
+    else
+        systemctl enable wasimoff_provider.service
+    fi
 fi
 if [ "$2" = 'first' ]; then
     echo "$controllerip      controller" >> /etc/hosts
@@ -48,6 +58,7 @@ if [ "$2" = 'first' ]; then
     sudo -u slurm chmod -R 0755 /etc/slurm/ /run/slurm/ /var/spool/slurm/
     ln -s $(pwd)/prototype /wasimoff_system
 fi
+# TODO Konfigurationen ohne Wasimoff!!!
 case $3 in
     builtin)
         cp -f slurm-resources/slurm_builtin.conf /etc/slurm/slurm.conf
@@ -63,6 +74,21 @@ case $3 in
         ;;
     gang-preempt)
         cp -f slurm-resources/slurm_gang_preempt.conf /etc/slurm/slurm.conf
+        ;;
+    builtin_pure)
+        cp -f slurm-resources/slurm_builtin_pure.conf /etc/slurm/slurm.conf
+        ;;
+    backfill_pure)
+        cp -f slurm-resources/slurm_backfill_pure.conf /etc/slurm/slurm.conf
+        ;;
+    gang_pure)
+        cp -f slurm-resources/slurm_gang_pure.conf /etc/slurm/slurm.conf
+        ;;
+    preempt_pure)
+        cp -f slurm-resources/slurm_preempt_pure.conf /etc/slurm/slurm.conf
+        ;;
+    gang-preempt_pure)
+        cp -f slurm-resources/slurm_gang_preempt_pure.conf /etc/slurm/slurm.conf
         ;;
 esac
 cp -f slurm-resources/cgroup.conf /etc/slurm/cgroup.conf

@@ -1,5 +1,5 @@
 import matplotlib.patches
-import os, sys, argparse, csv, matplotlib, pandas, numpy, functools
+import os, sys, argparse, csv, matplotlib, pandas, numpy, functools, locale
 import matplotlib.pyplot as pyplot
 from datetime import datetime, timedelta
 import pdb
@@ -13,18 +13,15 @@ def analyze_cluster(report_name : str, observation_start : datetime, observation
     num_nodes = len(node_wasimoff_usage)
     observation_duration = (observation_end - observation_start).total_seconds()
     for i in range(0,len(node_wasimoff_usage)):
-        total_wasimoff_usage += node_wasimoff_usage(i)
-        total_cluster_active += (node_total_active(i) / observation_duration)
+        total_wasimoff_usage += node_wasimoff_usage[i]
+        total_cluster_active += (node_total_active[i] / observation_duration)
 
     total_idle = (total_wasimoff_usage - total_cluster_active) / num_nodes
     total_wasimoff_usage /= num_nodes
     total_cluster_active /= num_nodes
 
 
-    with open(f"{report_name}.txt", 'w', newline='', encoding='utf-8') as report:
-        report.write(f"Start of observation: {observation_start}")
-        report.write(f"End of observation: {observation_end}")
-        report.write(f"Succesful tasks over whole cluster: {succesful_tasks_total}")
+    with open(f"{report_name}_cluster.txt", 'w', newline='', encoding='utf-8') as report:
         report_str = f"""Report for cluster
 Start of observation:                           {observation_start.strftime('%d/%m/%Y %H:%M:%S')}
 End of observation:                             {observation_end.strftime('%d/%m/%Y %H:%M:%S')}
@@ -38,12 +35,6 @@ Cluster idle [%]:                               {total_idle}
 """
         report.write(report_str)
 
-def get_elem_or_nothing(l : list, index : int, key : str) -> list:
-    if index < len(l):
-        return [l[index][key]]
-    else:
-        return []
-
 def color_of_state(state : str) -> str:
     match state:
         case 'slurm':
@@ -53,41 +44,46 @@ def color_of_state(state : str) -> str:
         case 'idle':
             return 'r'
 
-def print_activity_chart(observation_start : datetime, observation_end : datetime, node_periods : list, node_active_periods : list):
-    fig, ax = pyplot.subplot()
+def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_periods : list, node_active_periods : list):
+    fig, ax = pyplot.subplots()
 
     # data_frame = pandas.DataFrame({ 'node' : ['node_0', 'node_1', 'node_2'], 'start_1' : [observation_start, observation_start, observation_start]})
     data_frame_dict = {}
     nodes_num = len(node_periods)
 
     # data_frame_dict['start_1'] = [observation_start] * nodes_num
-    data_frame_dict['node'] = functools.reduce(lambda x, y: x + [f'node_{y}'], range(0,nodes_num), [])
+    data_frame_dict['node'] = functools.reduce(lambda x, y: x + [f'Node {y}'], range(0,nodes_num), [])
 
-    complete_table = [[]] * nodes_num
+    complete_table = functools.reduce(lambda x, y: x + [[]], range(0,nodes_num), [])
 
     for i in range(0,nodes_num):
         if observation_start < node_periods[i][0]["start"]:
             complete_table[i].append({'start' : observation_start, 'end' : node_periods[i][0]["start"], 'state' : 'slurm'})
         for node_period_i in range(0, len(node_periods[i])):
-            if node_periods[i][node_period_i]["start"] < node_active_periods[i][node_period_i][0]["start"]:
+            if node_active_periods[i][node_period_i]:
+                if node_periods[i][node_period_i]["start"] < node_active_periods[i][node_period_i][0]["start"]:
+                    complete_table[i].append({'start' : node_periods[i][node_period_i]["start"],
+                                               'end' : node_active_periods[i][node_period_i][0]["start"],
+                                                 'state' : 'idle'})
+
+                for node_active_period_i in range (0, len(node_active_periods[i][node_period_i])):
+                    complete_table[i].append({'start' : node_active_periods[i][node_period_i][node_active_period_i]['start'],
+                                               'end' : node_active_periods[i][node_period_i][node_active_period_i]['end'],
+                                                 'state' : 'wasimoff'})
+                    if node_active_period_i < len(node_active_periods[i][node_period_i]) - 1:
+                        complete_table[i].append({'start' : node_active_periods[i][node_period_i][node_active_period_i]['end'],
+                                               'end' : node_active_periods[i][node_period_i][node_active_period_i + 1]['start'],
+                                                 'state' : 'idle'})
+
+                if node_active_periods[i][node_period_i][-1]["end"] < node_periods[i][node_period_i]["end"]:
+                    complete_table[i].append({'start' : node_active_periods[i][node_period_i][-1]["end"],
+                                               'end' : node_periods[i][node_period_i]["end"],
+                                                 'state' : 'idle'})
+            else:
                 complete_table[i].append({'start' : node_periods[i][node_period_i]["start"],
-                                           'end' : node_active_periods[i][node_period_i][0]["start"],
-                                             'state' : 'idle'})
-            
-            for node_active_period_i in range (0, len(node_active_periods[i][node_period_i])):
-                complete_table[i].append({'start' : node_active_periods[i][node_period_i][node_active_period_i]['start'],
-                                           'end' : node_active_periods[i][node_period_i][node_active_period_i]['end'],
-                                             'state' : 'wasimoff'})
-                if node_active_period_i < len(node_active_periods[i][node_period_i]) - 1:
-                    complete_table[i].append({'start' : node_active_periods[i][node_period_i][node_active_period_i]['end'],
-                                           'end' : node_active_periods[i][node_period_i][node_active_period_i]['start'],
-                                             'state' : 'idle'})
-            
-            if node_active_periods[i][node_period_i][-1]["end"] < node_periods[i][node_period_i]["end"]:
-                complete_table[i].append({'start' : node_active_periods[i][node_period_i][-1]["end"],
-                                           'end' : node_periods[i][node_period_i]["end"],
-                                             'state' : 'idle'})
-            
+                                               'end' : node_periods[i][node_period_i]["end"],
+                                                 'state' : 'idle'})
+
             if node_period_i < len(node_periods[i]) - 1:
                 complete_table[i].append({'start' : node_periods[i][node_period_i]["end"],
                                            'end' : node_periods[i][node_period_i + 1]["start"],
@@ -98,35 +94,40 @@ def print_activity_chart(observation_start : datetime, observation_end : datetim
 
     max_intervalls = max(map(len,complete_table))
     for i in range(0,max_intervalls):
-        data_frame_dict[f'start_{i}']   = functools.reduce(lambda x, y: x + complete_table[y][i]['start'] if i < len(complete_table[y]) else [], range(0,nodes_num), [])
-        data_frame_dict[f'end_{i}']     = functools.reduce(lambda x, y: x + complete_table[y][i]['end'] if i < len(complete_table[y]) else [], range(0,nodes_num), [])
-        data_frame_dict[f'state_{i}']   = functools.reduce(lambda x, y: x + complete_table[y][i]['state'] if i < len(complete_table[y]) else [], range(0,nodes_num), [])
+        data_frame_dict[f'start_{i}']   = functools.reduce(lambda x, y: x + ([complete_table[y][i]['start']] if i < len(complete_table[y]) else [None]), range(0,nodes_num), [])
+        data_frame_dict[f'end_{i}']     = functools.reduce(lambda x, y: x + ([complete_table[y][i]['end']] if i < len(complete_table[y]) else [None]), range(0,nodes_num), [])
+        data_frame_dict[f'state_{i}']   = functools.reduce(lambda x, y: x + ([complete_table[y][i]['state']] if i < len(complete_table[y]) else [None]), range(0,nodes_num), [])
 
     data_frame = pandas.DataFrame(data_frame_dict)
     for i in range(0,max_intervalls):
-        data_frame[f'seconds_to_start_{i}'] = (data_frame[f'start_{i}'] - observation_start).total_seconds()
-        data_frame[f'seconds_to_end_{i}']   = (data_frame[f'end_{i}'] - observation_end).total_seconds()
-        data_frame[f'task_duration_{i}']   = (data_frame[f'end_{i}'] - data_frame[f'start_{i}']).total_seconds()
+        data_frame[f'seconds_to_start_{i}'] = (data_frame[f'start_{i}'] - observation_start).dt.total_seconds()
+        data_frame[f'seconds_to_end_{i}']   = (data_frame[f'end_{i}'] - observation_end).dt.total_seconds()
+        data_frame[f'task_duration_{i}']   = (data_frame[f'end_{i}'] - data_frame[f'start_{i}']).dt.total_seconds()
     
     for index, row in data_frame.iterrows():
         yrange = (index + 1, 0.5)
-        xrange = functools.reduce(lambda x, y: x + ([(row[f'seconds_to_start_{y}'], row[f'task_duration_{y}'])] if not row[f'start_{y}'] is None else []), range(0,max_intervalls), [])
-        colors = functools.reduce(lambda x, y: x + [color_of_state(row[f'state_{i}'])], range(0,max_intervalls), [])
+        xrange = functools.reduce(lambda x, y: x + ([(row[f'seconds_to_start_{y}'], row[f'task_duration_{y}'])] if not pandas.isnull(row[f'start_{y}']) else []), range(0,max_intervalls), [])
+        colors = functools.reduce(lambda x, y: x + ([color_of_state(row[f'state_{y}'])] if not pandas.isnull(row[f'state_{y}']) else []), range(0,max_intervalls), [])
         ax.broken_barh(xranges=xrange, yrange=yrange, color=colors)
 
-    ax.set_yticks(map(lambda x, y: x + y + 0.5, range(0,nodes_num), 1))
-    ax.set_yticklabels(data_frame['node'])
+    ax.set_yticks(list(map(lambda x: x + 1.25, range(0,nodes_num))))
+    ax.set_yticklabels(data_frame['node'], fontsize=14)
 
     patches = []
     for state in ['slurm', 'wasimoff', 'idle']:
         patches.append(matplotlib.patches.Patch(color=color_of_state(state)))
 
-    ax.legends(handles=patches, labels=['slurm', 'wasimoff', 'idle'], fontsize=12)
+    ax.legend(handles=patches, labels=['slurm', 'wasimoff', 'idle'], fontsize=12)
 
-    pyplot.xlabel('Zeit in s', loc='right')
+    pyplot.xticks(fontsize=14)
+    pyplot.xlabel('Zeit in s', loc='right', fontsize=16)
 
     pyplot.gca().invert_yaxis()
-    pyplot.show()
+    # pyplot.show()
+    # fig.set_figheight(6)
+    fig.set_figwidth(10)
+    pyplot.savefig(report_name + '_plot.png', dpi=500)
+    # pyplot.savefig(report_name + '_plot.png')
 
 def analyze_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str) -> tuple:
     # initialize objects
@@ -135,7 +136,7 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
     wasimoff_active = False
     succesful_jobs = 0
     wasimoff_usage = 0.0
-    active_periods = []
+    active_periods = [[]]
     total_active = 0
 
     periods.append({"start" : observation_start})
@@ -156,7 +157,7 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
             if state:
                 if "Job completed" in line:
                     succesful_jobs += 1
-                elif "Start running tasks" in line:
+                elif "Start running tasks" in line and wasimoff_active == False:
                     wasimoff_active = True
                     active_periods[-1].append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
                         "%Y %b %d %H:%M:%S")})
@@ -178,6 +179,8 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
                         "%Y %b %d %H:%M:%S")})
                     active_periods.append([])    
 
+    if wasimoff_active:
+        active_periods[-1][-1]["end"] = observation_end
     if not "end" in periods[-1].keys():
         periods[-1]["end"] = observation_end
 
@@ -197,9 +200,9 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
             duration_perc = period_duration / observation_duration
             wasimoff_usage += duration_perc
             active_duration = 0 
-            for j in len(active_periods[i]):
-                row[f"active_start_{j}"] = active_periods[i][j]["start"].strftime('%d/%m/%Y %H:%M:%S'),
-                row[f"active_end_{j}"] = active_periods[i][j]["end"].strftime('%d/%m/%Y %H:%M:%S'),
+            for j in range(0,len(active_periods[i])):
+                row[f"active_start_{j}"] = active_periods[i][j]["start"].strftime('%d/%m/%Y %H:%M:%S')
+                row[f"active_end_{j}"] = active_periods[i][j]["end"].strftime('%d/%m/%Y %H:%M:%S')
                 active_duration += (active_periods[i][j]["end"] - active_periods[i][j]["start"]).total_seconds()
             active_duration_perc = active_duration / observation_duration
             total_active += active_duration
@@ -220,6 +223,7 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
     return succesful_jobs, periods, active_periods, wasimoff_usage, total_active
 
 def main():
+    locale.setlocale(locale.LC_ALL,'')
     parser = argparse.ArgumentParser(
         prog="",
         description="Analyse usage of compute node and cluster",
@@ -258,8 +262,8 @@ def main():
         node_wasimoff_usage.append(wasimoff_usage)
         node_total_active.append(total_active)
 
-    analyze_cluster(observation_start, observation_end, succesful_tasks_total, node_wasimoff_usage, node_total_active)
-    # print_activity_chart(observation_start, observation_end, node_periods, node_active_periods)
+    analyze_cluster(args.timestamp_file.split('.')[0], observation_start, observation_end, succesful_tasks_total, node_wasimoff_usage, node_total_active)
+    print_activity_chart(args.timestamp_file.split('.')[0], observation_start, observation_end, node_periods, node_active_periods)
 
 
 if __name__ == '__main__':
