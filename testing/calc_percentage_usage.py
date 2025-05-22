@@ -6,6 +6,7 @@ import pdb
 
 SLURM_JOBS = 50
 
+# TODO Add epilog and prolog overhead
 def analyze_cluster(report_name : str, observation_start : datetime, observation_end : datetime, succesful_tasks_total : int,  node_wasimoff_usage : list,  node_total_active : list):
     total_wasimoff_usage = 0.0
     total_cluster_active = 0.0
@@ -25,13 +26,13 @@ def analyze_cluster(report_name : str, observation_start : datetime, observation
         report_str = f"""Report for cluster
 Start of observation:                           {observation_start.strftime('%d/%m/%Y %H:%M:%S')}
 End of observation:                             {observation_end.strftime('%d/%m/%Y %H:%M:%S')}
-Total duration of observation:                  {observation_duration}
+Total duration of observation [s]:              {observation_duration}
 Succesful wasimoff tasks over whole cluster:    {succesful_tasks_total}
-Slurm job throuput [job/s]:                     {SLURM_JOBS/observation_duration}
-Wasimoff task throuput [task/s]:                {succesful_tasks_total/observation_duration}
-Slurm utilization [%]:                          {1.0 - total_wasimoff_usage}
-Wasimoff utilzation [%]:                        {total_cluster_active}
-Cluster idle [%]:                               {total_idle}
+Slurm job throuput [job/s]:                     {(SLURM_JOBS/observation_duration):7f}
+Wasimoff task throuput [task/s]:                {(succesful_tasks_total/observation_duration):7f}
+Slurm utilization [%]:                          {(1.0 - total_wasimoff_usage):7f}
+Wasimoff utilzation [%]:                        {total_cluster_active:7f}
+Cluster idle [%]:                               {total_idle:7f}
 """
         report.write(report_str)
 
@@ -44,6 +45,7 @@ def color_of_state(state : str) -> str:
         case 'idle':
             return 'r'
 
+# TODO Add slurm job data and epilog/prolog overhead to chart
 def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_periods : list, node_active_periods : list):
     fig, ax = pyplot.subplots()
 
@@ -117,7 +119,7 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
     for state in ['slurm', 'wasimoff', 'idle']:
         patches.append(matplotlib.patches.Patch(color=color_of_state(state)))
 
-    ax.legend(handles=patches, labels=['slurm', 'wasimoff', 'idle'], fontsize=12)
+    ax.legend(handles=patches, labels=['slurm', 'wasimoff', 'idle'], fontsize=12, bbox_to_anchor=(1.0, 0.81))
 
     pyplot.xticks(fontsize=14)
     pyplot.xlabel('Zeit in s', loc='right', fontsize=16)
@@ -129,6 +131,7 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
     pyplot.savefig(report_name + '_plot.png', dpi=500)
     # pyplot.savefig(report_name + '_plot.png')
 
+# TODO Add handling of slurm output files
 def analyze_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str) -> tuple:
     # initialize objects
     periods = []
@@ -136,6 +139,7 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
     wasimoff_active = False
     succesful_jobs = 0
     wasimoff_usage = 0.0
+    total_duration = 0
     active_periods = [[]]
     total_active = 0
 
@@ -197,8 +201,9 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
                 'start' : periods[i]["start"].strftime('%d/%m/%Y %H:%M:%S'),
                 'end' : periods[i]["end"].strftime('%d/%m/%Y %H:%M:%S')}
             period_duration = (periods[i]["end"] - periods[i]["start"]).total_seconds()
+            total_duration += period_duration
             duration_perc = period_duration / observation_duration
-            wasimoff_usage += duration_perc
+            # wasimoff_usage += duration_perc
             active_duration = 0 
             for j in range(0,len(active_periods[i])):
                 row[f"active_start_{j}"] = active_periods[i][j]["start"].strftime('%d/%m/%Y %H:%M:%S')
@@ -212,16 +217,18 @@ def analyze_node(observation_start : datetime, observation_end : datetime, obser
                 'active_perc' : active_duration_perc})
             csvwriter.writerow(row)
         
+        wasimoff_usage = total_duration / observation_duration
         writer = csv.writer(csvfile)
         writer.writerow(["total duration of observation in s", observation_duration])
-        writer.writerow(["wasimoff node active in %", wasimoff_usage])
-        writer.writerow(["wasimoff node running in %", total_active / observation_duration])
-        writer.writerow(["slurm node active in %", 1.0 - wasimoff_usage])
+        writer.writerow(["wasimoff node active in %", f"{wasimoff_usage:7f}"])
+        writer.writerow(["wasimoff node running in %", f"{(total_active / observation_duration):7f}"])
+        writer.writerow(["slurm node active in %", f"{(1.0 - wasimoff_usage):7f}"])
         writer.writerow(["number of succesful wasimoff tasks", succesful_jobs])
-        writer.writerow(["wasimoff throughput in job/s", succesful_jobs/observation_duration])
+        writer.writerow(["wasimoff throughput in job/s", f"{(succesful_jobs/observation_duration):7f}"])
 
     return succesful_jobs, periods, active_periods, wasimoff_usage, total_active
 
+# Add handling for slurm output
 def main():
     locale.setlocale(locale.LC_ALL,'')
     parser = argparse.ArgumentParser(
@@ -231,6 +238,7 @@ def main():
     )
     parser.add_argument("-t", required=True, help="set file which contains timestamps of observation", metavar="timestamp file", dest="timestamp_file")
     parser.add_argument("-l", required=True, help="set logfiles of observed compute nodes", metavar="com node log files", dest="logs", nargs='+')
+    # parser.add_argument("-s", required=True, help="set slurm output files of observed compute nodes", metavar="com node slurm output files", dest="slurm_file", nargs='+')
     args = parser.parse_args()
 
     # initialize timestamp objects
