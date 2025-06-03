@@ -5,7 +5,7 @@ com0ip=$5
 com1ip=$6
 com2ip=$7
 apt update
-apt install -fy munge slurm-client build-essential gfortran python3 curl
+apt install -fy slurm-client build-essential gfortran python3 curl
 if [ "$2" = 'first' ]; then
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 fi
