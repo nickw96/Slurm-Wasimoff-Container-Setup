@@ -1,38 +1,52 @@
 import matplotlib.patches
-import os, sys, argparse, csv, matplotlib, pandas, numpy, functools, locale
+import os, sys, argparse, csv, matplotlib, pandas, numpy, functools, locale, re
 import matplotlib.pyplot as pyplot
 from datetime import datetime, timedelta
 import pdb
 
-SLURM_JOBS = 50
+#TODO Kopie machen speziell für ISO 8601 Handling
+TIMESTAMP_READ_FORMAT='%Y-%m-%d %H:%M:%S'
+JOURNAL_TIME_READ_FORMAT='%Y %b %d %H:%M:%S'
+PRINT_TIME_FORMAT='%d/%m/%Y %H:%M:%S'
 
-# TODO Add epilog and prolog overhead
-def analyze_cluster(report_name : str, observation_start : datetime, observation_end : datetime, succesful_tasks_total : int,  node_wasimoff_usage : list,  node_total_active : list):
+def sort_slurm_jobs(jobs : list) -> list:
+    return sorted(jobs, key=lambda dic: dic['start'])
+
+def analyse_cluster(report_name : str, observation_start : datetime, observation_end : datetime, succesful_tasks_total : int,
+                    node_wasimoff_usage : list, node_slurm_usage : list, node_prolog_usage : list, node_epilog_usage : list, node_idle_usage : list, num_slurm_jobs : int):
     total_wasimoff_usage = 0.0
-    total_cluster_active = 0.0
+    total_slurm_usage = 0.0
+    total_prolog = 0.0
+    total_epilog = 0.0
     total_idle = 0.0
     num_nodes = len(node_wasimoff_usage)
     observation_duration = (observation_end - observation_start).total_seconds()
     for i in range(0,len(node_wasimoff_usage)):
         total_wasimoff_usage += node_wasimoff_usage[i]
-        total_cluster_active += (node_total_active[i] / observation_duration)
+        total_slurm_usage += node_slurm_usage[i]
+        total_prolog += node_prolog_usage[i]
+        total_epilog += node_epilog_usage[i]
+        total_idle += node_idle_usage[i]
 
-    total_idle = (total_wasimoff_usage - total_cluster_active) / num_nodes
+    total_prolog /= num_nodes
+    total_epilog /= num_nodes
+    total_idle /= num_nodes
     total_wasimoff_usage /= num_nodes
-    total_cluster_active /= num_nodes
-
+    total_slurm_usage /= num_nodes
 
     with open(f"{report_name}_cluster.txt", 'w', newline='', encoding='utf-8') as report:
         report_str = f"""Report for cluster
-Start of observation:                           {observation_start.strftime('%d/%m/%Y %H:%M:%S')}
-End of observation:                             {observation_end.strftime('%d/%m/%Y %H:%M:%S')}
+Start of observation:                           {observation_start.strftime(PRINT_TIME_FORMAT)}
+End of observation:                             {observation_end.strftime(PRINT_TIME_FORMAT)}
 Total duration of observation [s]:              {observation_duration}
 Succesful wasimoff tasks over whole cluster:    {succesful_tasks_total}
-Slurm job throuput [job/s]:                     {(SLURM_JOBS/observation_duration):7f}
+Slurm job throuput [job/s]:                     {(num_slurm_jobs/observation_duration):7f}
 Wasimoff task throuput [task/s]:                {(succesful_tasks_total/observation_duration):7f}
-Slurm utilization [%]:                          {(1.0 - total_wasimoff_usage):7f}
-Wasimoff utilzation [%]:                        {total_cluster_active:7f}
-Cluster idle [%]:                               {total_idle:7f}
+Slurm utilization:                              {total_slurm_usage:7f}
+Wasimoff utilzation:                            {total_wasimoff_usage:7f}
+Cluster in prolog:                              {total_prolog:7f}
+Cluster in epilog:                              {total_epilog:7f}
+Cluster idle:                                   {total_idle:7f}
 """
         report.write(report_str)
 
@@ -44,61 +58,24 @@ def color_of_state(state : str) -> str:
             return 'y'
         case 'idle':
             return 'r'
+        case 'prolog':
+            return 'c'
+        case 'epilog':
+            return 'b'
 
-# TODO Add slurm job data and epilog/prolog overhead to chart
-def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_periods : list, node_active_periods : list):
+def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_time_lines : list):
     fig, ax = pyplot.subplots()
 
-    # data_frame = pandas.DataFrame({ 'node' : ['node_0', 'node_1', 'node_2'], 'start_1' : [observation_start, observation_start, observation_start]})
     data_frame_dict = {}
-    nodes_num = len(node_periods)
+    nodes_num = len(node_time_lines)
 
-    # data_frame_dict['start_1'] = [observation_start] * nodes_num
     data_frame_dict['node'] = functools.reduce(lambda x, y: x + [f'Node {y}'], range(0,nodes_num), [])
 
-    complete_table = functools.reduce(lambda x, y: x + [[]], range(0,nodes_num), [])
-
-    for i in range(0,nodes_num):
-        if observation_start < node_periods[i][0]["start"]:
-            complete_table[i].append({'start' : observation_start, 'end' : node_periods[i][0]["start"], 'state' : 'slurm'})
-        for node_period_i in range(0, len(node_periods[i])):
-            if node_active_periods[i][node_period_i]:
-                if node_periods[i][node_period_i]["start"] < node_active_periods[i][node_period_i][0]["start"]:
-                    complete_table[i].append({'start' : node_periods[i][node_period_i]["start"],
-                                               'end' : node_active_periods[i][node_period_i][0]["start"],
-                                                 'state' : 'idle'})
-
-                for node_active_period_i in range (0, len(node_active_periods[i][node_period_i])):
-                    complete_table[i].append({'start' : node_active_periods[i][node_period_i][node_active_period_i]['start'],
-                                               'end' : node_active_periods[i][node_period_i][node_active_period_i]['end'],
-                                                 'state' : 'wasimoff'})
-                    if node_active_period_i < len(node_active_periods[i][node_period_i]) - 1:
-                        complete_table[i].append({'start' : node_active_periods[i][node_period_i][node_active_period_i]['end'],
-                                               'end' : node_active_periods[i][node_period_i][node_active_period_i + 1]['start'],
-                                                 'state' : 'idle'})
-
-                if node_active_periods[i][node_period_i][-1]["end"] < node_periods[i][node_period_i]["end"]:
-                    complete_table[i].append({'start' : node_active_periods[i][node_period_i][-1]["end"],
-                                               'end' : node_periods[i][node_period_i]["end"],
-                                                 'state' : 'idle'})
-            else:
-                complete_table[i].append({'start' : node_periods[i][node_period_i]["start"],
-                                               'end' : node_periods[i][node_period_i]["end"],
-                                                 'state' : 'idle'})
-
-            if node_period_i < len(node_periods[i]) - 1:
-                complete_table[i].append({'start' : node_periods[i][node_period_i]["end"],
-                                           'end' : node_periods[i][node_period_i + 1]["start"],
-                                             'state' : 'slurm'})
-        
-        if node_periods[i][-1]["end"] < observation_end:
-            complete_table[i].append({'start' : node_periods[i][-1]["end"], 'end' : observation_end, 'state' : 'slurm'})
-
-    max_intervalls = max(map(len,complete_table))
+    max_intervalls = max(map(len,node_time_lines))
     for i in range(0,max_intervalls):
-        data_frame_dict[f'start_{i}']   = functools.reduce(lambda x, y: x + ([complete_table[y][i]['start']] if i < len(complete_table[y]) else [None]), range(0,nodes_num), [])
-        data_frame_dict[f'end_{i}']     = functools.reduce(lambda x, y: x + ([complete_table[y][i]['end']] if i < len(complete_table[y]) else [None]), range(0,nodes_num), [])
-        data_frame_dict[f'state_{i}']   = functools.reduce(lambda x, y: x + ([complete_table[y][i]['state']] if i < len(complete_table[y]) else [None]), range(0,nodes_num), [])
+        data_frame_dict[f'start_{i}']   = functools.reduce(lambda x, y: x + ([node_time_lines[y][i]['start']] if i < len(node_time_lines[y]) else [None]), range(0,nodes_num), [])
+        data_frame_dict[f'end_{i}']     = functools.reduce(lambda x, y: x + ([node_time_lines[y][i]['end']] if i < len(node_time_lines[y]) else [None]), range(0,nodes_num), [])
+        data_frame_dict[f'state_{i}']   = functools.reduce(lambda x, y: x + ([node_time_lines[y][i]['state']] if i < len(node_time_lines[y]) else [None]), range(0,nodes_num), [])
 
     data_frame = pandas.DataFrame(data_frame_dict)
     for i in range(0,max_intervalls):
@@ -116,10 +93,10 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
     ax.set_yticklabels(data_frame['node'], fontsize=14)
 
     patches = []
-    for state in ['slurm', 'wasimoff', 'idle']:
+    for state in ['slurm', 'wasimoff', 'idle', 'prolog', 'epilog']:
         patches.append(matplotlib.patches.Patch(color=color_of_state(state)))
 
-    ax.legend(handles=patches, labels=['slurm', 'wasimoff', 'idle'], fontsize=12, bbox_to_anchor=(1.0, 0.81))
+    ax.legend(handles=patches, labels=['slurm', 'wasimoff', 'idle', 'prolog', 'epilog'], fontsize=12, bbox_to_anchor=(1.13, 0.81))
 
     pyplot.xticks(fontsize=14)
     pyplot.xlabel('Zeit in s', loc='right', fontsize=16)
@@ -127,109 +104,228 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
     pyplot.gca().invert_yaxis()
     # pyplot.show()
     # fig.set_figheight(6)
-    fig.set_figwidth(10)
+    fig.set_figwidth(11)
     pyplot.savefig(report_name + '_plot.png', dpi=500)
     # pyplot.savefig(report_name + '_plot.png')
 
-# TODO Add handling of slurm output files
-def analyze_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str) -> tuple:
+def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
+    nodes_slurm_jobs = {}
+    node_names = []
+    for i in range(0, num_com_nodes):
+        nodes_slurm_jobs[f'com{i}'] = []
+        node_names.append(f'com{i}')
+
+    with os.scandir(dir) as entries:
+        for entry in entries:
+            mapping = {}
+            with open(entry.path, 'r', encoding='utf-8') as file:
+                lines = file.readlines()
+                num_nodes_in_job = 0 
+                for i in range(0,len(lines)):
+                    split_line = lines[i].split()
+                    if len(split_line) > 1 and split_line[1] in node_names and not split_line[1] in mapping.values():
+                        num_nodes_in_job += 1
+                        mapping[split_line[0]] = split_line[1]
+                assert num_com_nodes >= num_nodes_in_job
+                for i in range(0,num_nodes_in_job):
+                    split_line = lines[i].split()
+                    nodes_slurm_jobs[mapping[split_line[0]]].append({'start' : datetime.strptime(f'{split_line[1]} {split_line[2]}', TIMESTAMP_READ_FORMAT), 'state' : 'slurm'})
+                for i in range(-num_nodes_in_job,0):
+                    split_line = lines[i].split()
+                    nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.strptime(f'{split_line[1]} {split_line[2]}', TIMESTAMP_READ_FORMAT)
+
+    return nodes_slurm_jobs
+
+def analyse_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str, slurm_data : list) -> tuple:
     # initialize objects
     periods = []
     state = False
     wasimoff_active = False
-    succesful_jobs = 0
+    succesful_tasks = 0
     wasimoff_usage = 0.0
-    total_duration = 0
+    slurm_usage = 0.0
+    prolog_usage = 0.0
+    epilog_usage = 0.0
+    idle_usage = 0.0
+    wasimoff_total_duration = 0
+    slurm_total_duration = 0
+    prolog_total_duration = 0
+    epilog_total_duration = 0
+    idle_total_duration = 0
     active_periods = [[]]
-    total_active = 0
+    wasimoff_index = 0
+    time_line = []
+    prologs = []
+    epilogs = []
 
-    periods.append({"start" : observation_start})
+    # periods.append({"start" : observation_start})
 
     with open(log, 'r', encoding='utf-8') as logfile:
         firstline = logfile.readline()
         firstline_split = firstline.split()
         
         # check if provider is currently active
-        if "deno" in firstline_split[4] or ("systemd" in firstline_split[4] and "Start" in firstline_split[5]):
+        if "deno" in firstline_split[4]:
             state = True
-        else:
-            periods[-1]["end"] = datetime.strptime(f"2025 {firstline_split[0]} {firstline_split[1]} {firstline_split[2]}",
-                        "%Y %b %d %H:%M:%S")
 
         for line in ([firstline] + list(logfile)):
             line_split = line.split()
             if state:
                 if "Job completed" in line:
-                    succesful_jobs += 1
+                    succesful_tasks += 1
                 elif "Start running tasks" in line and wasimoff_active == False:
                     wasimoff_active = True
                     active_periods[-1].append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
-                        "%Y %b %d %H:%M:%S")})
+                        JOURNAL_TIME_READ_FORMAT), 'state' : 'wasimoff'})
                 elif "Returning to idle" in line:
                     wasimoff_active = False
                     active_periods[-1][-1]["end"] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
-                        "%Y %b %d %H:%M:%S")
+                        JOURNAL_TIME_READ_FORMAT)
                 elif "Stopping wasimoff_provider.service" in line:
                     state = False
                     if wasimoff_active:
                         wasimoff_active = False
                         active_periods[-1][-1]["end"] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
-                        "%Y %b %d %H:%M:%S")
-                    periods[-1]["end"] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
-                        "%Y %b %d %H:%M:%S")
-            elif "[Wasimoff Provider] started in Window" in line:
+                        JOURNAL_TIME_READ_FORMAT)
+                    if len(periods) > 0:
+                        periods[-1]["end"] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                            JOURNAL_TIME_READ_FORMAT)
+                    else:
+                        periods.append({"start" : observation_start,
+                                        "end" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                                        JOURNAL_TIME_READ_FORMAT), 'state' : 'wasimoff_period'})
+                    epilogs.append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                        JOURNAL_TIME_READ_FORMAT), 'state' : 'epilog'})
+            elif "Stopping wasimoff_provider.service" in line:
+                epilogs.append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                        JOURNAL_TIME_READ_FORMAT), 'state' : 'epilog'})
+            elif "Stopped wasimoff_provider.service" in line:
+                if len(epilogs) > 0:
+                    epilogs[-1]['end'] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                                                           JOURNAL_TIME_READ_FORMAT)
+                else:
+                    epilogs.append({"start" : observation_start,
+                        'end' : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                                                  JOURNAL_TIME_READ_FORMAT), 'state' : 'epilog'})
+            elif "Starting wasimoff_provider.service" in line:
+                prologs.append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                        JOURNAL_TIME_READ_FORMAT), 'state' : 'prolog'})
+            elif "Started wasimoff_provider.service" in line:
+                if len(epilogs) > 0:
+                    prologs[-1]['end'] = datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                                                           JOURNAL_TIME_READ_FORMAT)
+                else:
+                    prologs.append({"start" : observation_start,
+                        'end' : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
+                                                  JOURNAL_TIME_READ_FORMAT), 'state' : 'prolog'})
+            elif "[Wasimoff] starting Provider in Deno" in line:
                     state = True
                     periods.append({"start" : datetime.strptime(f"2025 {line_split[0]} {line_split[1]} {line_split[2]}",
-                        "%Y %b %d %H:%M:%S")})
+                        JOURNAL_TIME_READ_FORMAT), 'state' : 'wasimoff_period'})
                     active_periods.append([])    
 
     if wasimoff_active:
         active_periods[-1][-1]["end"] = observation_end
     if not "end" in periods[-1].keys():
         periods[-1]["end"] = observation_end
+    elif not "end" in prologs[-1].keys():
+        prologs[-1]["end"] = observation_end
+    elif not "end" in epilogs[-1].keys():
+        epilogs[-1]["end"] = observation_end
+
+    tmp = sorted(slurm_data + prologs + periods + epilogs, key=lambda dic: (dic['start'], dic['end']))
+    for slice in tmp:
+        if len(time_line) > 1 and (slice['start'] - time_line[-1]['end']).total_seconds() > 0:
+                time_line.append({'start' : time_line[-1]['end'],
+                                  'end' : slice['start'],
+                                  'state' : 'idle'})
+                time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+        if slice['state'] == 'wasimoff_period':
+            if len(active_periods[wasimoff_index]) > 0:
+                if (active_periods[wasimoff_index][0]['start'] - slice['start']).total_seconds() > 0:
+                    time_line.append({'start' : slice['start'],
+                                      'end' : active_periods[wasimoff_index][0]['start'],
+                                      'state' : 'idle'})
+                    time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+                for active_period in active_periods[wasimoff_index]:
+                    if len(time_line) > 1 and (active_period['start'] - time_line[-1]['end']).total_seconds() > 0:
+                        time_line.append({'start' : time_line[-1]['end'],
+                                      'end' : active_period['start'],
+                                      'state' : 'idle'})
+                        time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+                    time_line.append(active_period)
+                    time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+                if (slice['end'] - active_periods[wasimoff_index][-1]['end']).total_seconds() > 0:
+                    time_line.append({'start' : active_periods[wasimoff_index][-1]['end'],
+                                      'end' : slice['end'],
+                                      'state' : 'idle'})
+                    time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+            # no check necessary, since len(periods)==len(active_periods)
+            wasimoff_index += 1
+        else:
+            if (slice['end'] - slice['start']).total_seconds() != 0.0:
+                time_line.append(slice)
+                time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+
+    if time_line[-1]['end'] < observation_end:
+        time_line.append({'start' : time_line[-1]['end'],
+                                      'end' : observation_end,
+                                      'state' : 'idle'})
+        time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+
+    # TODO remove periods of 0 and posiblly merge periods of same state
 
     with open(f"{log}.csv", 'w', newline='', encoding='utf-8') as csvfile:
-        max_num_active_periods = max(map(len, active_periods))
-        fieldnames = ['period','start','end','duration','duration_perc','active','active_perc']
-        for j in range(0,max_num_active_periods):
-            fieldnames.append(f"active_start_{j}")
-            fieldnames.append(f"active_end_{j}")
+        fieldnames = ['intervall','state','start','end','duration','duration_perc']
         csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
         csvwriter.writeheader()
-        for i in range(0,len(periods)):
-            row = {'period' : i+1,
-                'start' : periods[i]["start"].strftime('%d/%m/%Y %H:%M:%S'),
-                'end' : periods[i]["end"].strftime('%d/%m/%Y %H:%M:%S')}
-            period_duration = (periods[i]["end"] - periods[i]["start"]).total_seconds()
-            total_duration += period_duration
-            duration_perc = period_duration / observation_duration
-            # wasimoff_usage += duration_perc
-            active_duration = 0 
-            for j in range(0,len(active_periods[i])):
-                row[f"active_start_{j}"] = active_periods[i][j]["start"].strftime('%d/%m/%Y %H:%M:%S')
-                row[f"active_end_{j}"] = active_periods[i][j]["end"].strftime('%d/%m/%Y %H:%M:%S')
-                active_duration += (active_periods[i][j]["end"] - active_periods[i][j]["start"]).total_seconds()
-            active_duration_perc = active_duration / observation_duration
-            total_active += active_duration
-            row.update({'duration' : period_duration,
-                'duration_perc' : duration_perc,
-                'active' : active_duration,
-                'active_perc' : active_duration_perc})
-            csvwriter.writerow(row)
-        
-        wasimoff_usage = total_duration / observation_duration
-        writer = csv.writer(csvfile)
-        writer.writerow(["total duration of observation in s", observation_duration])
-        writer.writerow(["wasimoff node active in %", f"{wasimoff_usage:7f}"])
-        writer.writerow(["wasimoff node running in %", f"{(total_active / observation_duration):7f}"])
-        writer.writerow(["slurm node active in %", f"{(1.0 - wasimoff_usage):7f}"])
-        writer.writerow(["number of succesful wasimoff tasks", succesful_jobs])
-        writer.writerow(["wasimoff throughput in job/s", f"{(succesful_jobs/observation_duration):7f}"])
+        time_line_index = 0
+        for time_slot in time_line:
+            csvwriter.writerow({
+                'intervall' : time_line_index,
+                'state' : time_slot['state'],
+                'start' : time_slot['start'].strftime(PRINT_TIME_FORMAT),
+                'end' : time_slot['end'].strftime(PRINT_TIME_FORMAT),
+                'duration' : time_slot['duration'],
+                'duration_perc' : time_slot['duration'] / observation_duration
+            })
+            match time_slot['state']:
+                case 'wasimoff' :
+                    wasimoff_total_duration += time_slot['duration']
+                case 'slurm' :
+                    slurm_total_duration += time_slot['duration']
+                case 'epilog' :
+                    epilog_total_duration += time_slot['duration']
+                case 'prolog' :
+                    prolog_total_duration += time_slot['duration']
+                case 'idle' :
+                    idle_total_duration += time_slot['duration']
+            time_line_index += 1
 
-    return succesful_jobs, periods, active_periods, wasimoff_usage, total_active
+        assert (wasimoff_total_duration + slurm_total_duration + prolog_total_duration + epilog_total_duration + idle_total_duration) <= observation_duration
+        wasimoff_usage = wasimoff_total_duration / observation_duration
+        slurm_usage = slurm_total_duration / observation_duration
+        prolog_usage = prolog_total_duration / observation_duration
+        epilog_usage = epilog_total_duration / observation_duration
+        idle_usage = idle_total_duration / observation_duration
+
+        writer = csv.writer(csvfile)
+        writer.writerow(["total duration of observation run in s", observation_duration])
+        writer.writerow(["wasimoff node usage in %", f"{wasimoff_usage:7f}"])
+        writer.writerow(["slurm node usage in %", f"{slurm_usage:7f}"])
+        writer.writerow(["time in prolog on node relative to observation %", f"{prolog_usage:7f}"])
+        writer.writerow(["time in epilog on node relative to observation %", f"{epilog_usage:7f}"])
+        writer.writerow(["time in idle on node relative to observation %", f"{idle_usage:7f}"])
+        writer.writerow(["number of succesful wasimoff tasks", succesful_tasks])
+        writer.writerow(["wasimoff throughput on node in job/s", f"{(succesful_tasks/observation_duration):7f}"])
+        writer.writerow(["slurm throughput on node in job/s", f"{(len(slurm_data)/observation_duration):7f}"])
+
+    return succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage
 
 # Add handling for slurm output
 def main():
+    num_slurm_jobs = 0
+    num_nodes = 0
     locale.setlocale(locale.LC_ALL,'')
     parser = argparse.ArgumentParser(
         prog="",
@@ -237,41 +333,66 @@ def main():
         epilog="Break down usage of individual compute nodes to percentage of non-utilization, usage via wasimoff and usage via slurm"
     )
     parser.add_argument("-t", required=True, help="set file which contains timestamps of observation", metavar="timestamp file", dest="timestamp_file")
-    parser.add_argument("-l", required=True, help="set logfiles of observed compute nodes", metavar="com node log files", dest="logs", nargs='+')
-    # parser.add_argument("-s", required=True, help="set slurm output files of observed compute nodes", metavar="com node slurm output files", dest="slurm_file", nargs='+')
+    parser.add_argument("-l", required=True, help="set directory of logfiles of observed compute nodes", metavar="com node wasimoff log directory", dest="wasimoff_logs")
+    parser.add_argument("-s", required=True, help="set directory with slurm output files of observed compute nodes", metavar="com node slurm log directory", dest="slurm_logs")
     args = parser.parse_args()
+
+    try:
+        tmp = os.scandir(args.wasimoff_logs)
+        num_nodes = len(list(tmp))
+        tmp.close()
+    except NotADirectoryError:
+        raise SystemExit('-l argument is required to be a directory')
+
+    try:
+        tmp = os.scandir(args.slurm_logs)
+        num_slurm_jobs = len(list(tmp))
+        tmp.close()
+    except NotADirectoryError:
+        raise SystemExit('-s argument is required to be a directory')
 
     # initialize timestamp objects
     observation_start = 0
     observation_end = 0
     observation_duration = 0
     
-    # succesful_jobs, periods, active_periods, wasimoff_usage, total_active
+    # succesful_tasks, periods, active_periods, wasimoff_usage, wasimoff_total_active
     # initialize objects for cluster
     succesful_tasks_total = 0
-    node_periods = []
-    node_active_periods = []
+    node_time_lines = []
     node_wasimoff_usage = []
-    node_total_active = []
-
+    node_slurm_usage = []
+    node_prolog_usage = []
+    node_epilog_usage = []
+    node_idle_usage = []
+    
     # Create datetime objects from timestamps
     with open(args.timestamp_file, 'r', encoding='utf-8') as timestamps:
         tmp = timestamps.readline().strip()
-        observation_start = datetime.strptime(tmp, "%Y-%m-%d %H:%M:%S")
+        observation_start = datetime.strptime(tmp, TIMESTAMP_READ_FORMAT)
         tmp = timestamps.readline().strip()
-        observation_end = datetime.strptime(tmp, "%Y-%m-%d %H:%M:%S")
+        observation_end = datetime.strptime(tmp, TIMESTAMP_READ_FORMAT)
         observation_duration = (observation_end - observation_start).total_seconds()
 
-    for log in args.logs:
-        succesful_tasks, periods, active_periods, wasimoff_usage, total_active = analyze_node(observation_start, observation_end, observation_duration, log)
-        succesful_tasks_total += succesful_tasks
-        node_periods.append(periods)
-        node_active_periods.append(active_periods)
-        node_wasimoff_usage.append(wasimoff_usage)
-        node_total_active.append(total_active)
+    # read slurm job data
+    slurm_data = read_slurm_data(args.slurm_logs, num_nodes)
 
-    analyze_cluster(args.timestamp_file.split('.')[0], observation_start, observation_end, succesful_tasks_total, node_wasimoff_usage, node_total_active)
-    print_activity_chart(args.timestamp_file.split('.')[0], observation_start, observation_end, node_periods, node_active_periods)
+    # read and analyse 
+    with os.scandir(args.wasimoff_logs) as entries:
+        for entry in entries:
+            if entry.name.endswith('.log'):
+                node_name = entry.name.split('_')[-1].split('.')[0]
+                succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage = analyse_node(observation_start, observation_end, observation_duration, entry.path, slurm_data[node_name])
+                succesful_tasks_total += succesful_tasks
+                node_time_lines.append(time_line)
+                node_wasimoff_usage.append(wasimoff_usage)
+                node_slurm_usage.append(slurm_usage)
+                node_prolog_usage.append(prolog_usage)
+                node_epilog_usage.append(epilog_usage)
+                node_idle_usage.append(idle_usage)
+
+    analyse_cluster(args.timestamp_file.split('.')[0], observation_start, observation_end, succesful_tasks_total, node_wasimoff_usage, node_slurm_usage, node_prolog_usage, node_epilog_usage, node_idle_usage, num_slurm_jobs)
+    print_activity_chart(args.timestamp_file.split('.')[0], observation_start, observation_end, node_time_lines)
 
 
 if __name__ == '__main__':
