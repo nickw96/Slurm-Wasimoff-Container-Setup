@@ -1,4 +1,5 @@
-import os, datetime, sys
+import os, sys
+from datetime import datetime, timedelta
 
 TIMESTAMP_READ_FORMAT='%Y-%m-%d %H:%M:%S'
 
@@ -17,7 +18,7 @@ def main():
 
     with open(sys.argv[1].split('.') + '_adapted.txt', 'w', encoding='utf-8', newline='\n') as output:
         output.write(f'{start.strftime(TIMESTAMP_READ_FORMAT)}\n')
-        output.write(f'{(end + datetime.timedelta(seconds=1)).strftime(TIMESTAMP_READ_FORMAT)}\n')
+        output.write(f'{(end + timedelta(seconds=1)).strftime(TIMESTAMP_READ_FORMAT)}\n')
 
 if __name__ == '__main__':
     main()
