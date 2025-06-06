@@ -24,12 +24,12 @@ until [ $num = 51 ]; do
     if [ "$1" = 'preempt' ]; then
         k=$(($RANDOM % 2))
         if [ k > 0 ]; then
-            sbatch -N$i -p highPrio -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$($j)_iso-8601.sh
+            sbatch -N$i -p highPrio -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$(echo $j)_iso-8601.sh
         else
-            sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$($j)_iso-8601.sh
+            sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$(echo $j)_iso-8601.sh
         fi
     else
-        sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$($j)_iso-8601.sh
+        sbatch -N$i -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$(echo $j)_iso-8601.sh
     fi
     num=$(($num + 1))
     sleep $(($RANDOM % 5 + 1))
