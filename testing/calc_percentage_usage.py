@@ -4,7 +4,6 @@ import matplotlib.pyplot as pyplot
 from datetime import datetime, timedelta
 import pdb
 
-#TODO Kopie machen speziell für ISO 8601 Handling
 TIMESTAMP_READ_FORMAT='%Y-%m-%d %H:%M:%S'
 JOURNAL_TIME_READ_FORMAT='%Y %b %d %H:%M:%S'
 PRINT_TIME_FORMAT='%d/%m/%Y %H:%M:%S'
@@ -65,7 +64,6 @@ def color_of_state(state : str) -> str:
 
 def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_time_lines : list):
     fig, ax = pyplot.subplots()
-
     data_frame_dict = {}
     nodes_num = len(node_time_lines)
 
@@ -157,8 +155,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     time_line = []
     prologs = []
     epilogs = []
-
-    # periods.append({"start" : observation_start})
 
     with open(log, 'r', encoding='utf-8') as logfile:
         firstline = logfile.readline()

@@ -60,7 +60,6 @@ def color_of_state(state : str) -> str:
 
 def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_time_lines : list):
     fig, ax = pyplot.subplots()
-    
     data_frame_dict = {}
     nodes_num = len(node_time_lines)
 
@@ -99,7 +98,7 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
     pyplot.gca().invert_yaxis()
     # pyplot.show()
     # fig.set_figheight(6)
-    fig.set_figwidth(10)
+    fig.set_figwidth(11)
     pyplot.savefig(report_name + '_plot.png', dpi=500)
     # pyplot.savefig(report_name + '_plot.png')
 
@@ -128,10 +127,6 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
                 for i in range(-num_com_nodes,0):
                     split_line = lines[i].split()
                     nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[1][:26] + split_line[1][29:])
-
-    # sort jobs on node via start date
-    # for i in range(0, num_com_nodes):
-    #     nodes_slurm_jobs[f'com{i}'] = sorted(nodes_slurm_jobs[f'com{i}'], key=lambda dic: dic['start'])
 
     return nodes_slurm_jobs
 
@@ -220,7 +215,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     elif not "end" in epilogs[-1].keys():
         epilogs[-1]["end"] = observation_end
 
-    tmp = sorted(slurm_data + prologs + periods + epilogs, key=lambda dic:(dic['start'], dic['end']))
+    tmp = sorted(slurm_data + prologs + periods + epilogs, key=lambda dic: (dic['start'], dic['end']))
     for slice in tmp:
         if len(time_line) > 1 and (slice['start'] - time_line[-1]['end']).total_seconds() > 0:
                 time_line.append({'start' : time_line[-1]['end'],
@@ -367,15 +362,16 @@ def main():
     # read and analyse 
     with os.scandir(args.wasimoff_logs) as entries:
         for entry in entries:
-            node_name = entry.name.split('_')[-1].split('.')[0]
-            succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage = analyse_node(observation_start, observation_end, observation_duration, entry.path, slurm_data[node_name])
-            succesful_tasks_total += succesful_tasks
-            node_time_lines.append(time_line)
-            node_wasimoff_usage.append(wasimoff_usage)
-            node_slurm_usage.append(slurm_usage)
-            node_prolog_usage.append(prolog_usage)
-            node_epilog_usage.append(epilog_usage)
-            node_idle_usage.append(idle_usage)
+            if entry.name.endswith('.log'):
+                node_name = entry.name.split('_')[-1].split('.')[0]
+                succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage = analyse_node(observation_start, observation_end, observation_duration, entry.path, slurm_data[node_name])
+                succesful_tasks_total += succesful_tasks
+                node_time_lines.append(time_line)
+                node_wasimoff_usage.append(wasimoff_usage)
+                node_slurm_usage.append(slurm_usage)
+                node_prolog_usage.append(prolog_usage)
+                node_epilog_usage.append(epilog_usage)
+                node_idle_usage.append(idle_usage)
 
     analyse_cluster(args.timestamp_file.split('.')[0], observation_start, observation_end, succesful_tasks_total, node_wasimoff_usage, node_slurm_usage, node_prolog_usage, node_epilog_usage, node_idle_usage, num_slurm_jobs)
     print_activity_chart(args.timestamp_file.split('.')[0], observation_start, observation_end, node_time_lines)
