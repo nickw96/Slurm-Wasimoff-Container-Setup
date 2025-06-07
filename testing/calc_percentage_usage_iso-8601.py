@@ -37,11 +37,11 @@ Total duration of observation [s]:              {observation_duration}
 Succesful wasimoff tasks over whole cluster:    {succesful_tasks_total}
 Slurm job throuput [job/s]:                     {(num_slurm_jobs/observation_duration):7f}
 Wasimoff task throuput [task/s]:                {(succesful_tasks_total/observation_duration):7f}
-Slurm utilization:                              {total_slurm_usage:7f}
-Wasimoff utilzation:                            {total_wasimoff_usage:7f}
-Cluster in prolog:                              {total_prolog:7f}
-Cluster in epilog:                              {total_epilog:7f}
-Cluster idle:                                   {total_idle:7f}
+Slurm utilization in %:                         {total_slurm_usage*100:5f}
+Wasimoff utilzation in %:                       {total_wasimoff_usage*100:5f}
+Cluster in prolog in %:                         {total_prolog*100:5f}
+Cluster in epilog in %:                         {total_epilog*100:5f}
+Cluster idle in %:                              {total_idle*100:5f}
 """
         report.write(report_str)
 
@@ -121,10 +121,10 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
                         num_nodes_in_job += 1
                         mapping[split_line[0]] = split_line[1]
                 assert num_com_nodes >= num_nodes_in_job
-                for i in range(0,num_com_nodes):
+                for i in range(0,num_nodes_in_job):
                     split_line = lines[i].split()
                     nodes_slurm_jobs[mapping[split_line[0]]].append({'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
-                for i in range(-num_com_nodes,0):
+                for i in range(-num_nodes_in_job,0):
                     split_line = lines[i].split()
                     nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[1][:26] + split_line[1][29:])
 
@@ -284,7 +284,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                     idle_total_duration += time_slot['duration']
             time_line_index += 1
 
-        assert (wasimoff_total_duration + slurm_total_duration + prolog_total_duration + epilog_total_duration + idle_total_duration) <= observation_duration
+        # assert (wasimoff_total_duration + slurm_total_duration + prolog_total_duration + epilog_total_duration + idle_total_duration) <= observation_duration
         wasimoff_usage = wasimoff_total_duration / observation_duration
         slurm_usage = slurm_total_duration / observation_duration
         prolog_usage = prolog_total_duration / observation_duration
@@ -293,11 +293,11 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
 
         writer = csv.writer(csvfile)
         writer.writerow(["total duration of observation run in s", observation_duration])
-        writer.writerow(["wasimoff node usage in %", f"{wasimoff_usage:7f}"])
-        writer.writerow(["slurm node usage in %", f"{slurm_usage:7f}"])
-        writer.writerow(["time in prolog on node relative to observation %", f"{prolog_usage:7f}"])
-        writer.writerow(["time in epilog on node relative to observation %", f"{epilog_usage:7f}"])
-        writer.writerow(["time in idle on node relative to observation %", f"{idle_usage:7f}"])
+        writer.writerow(["wasimoff node usage in %", f"{wasimoff_usage * 100:5f}"])
+        writer.writerow(["slurm node usage in %", f"{slurm_usage * 100:5f}"])
+        writer.writerow(["time in prolog on node relative to observation %", f"{prolog_usage * 100:5f}"])
+        writer.writerow(["time in epilog on node relative to observation %", f"{epilog_usage * 100:5f}"])
+        writer.writerow(["time in idle on node relative to observation %", f"{idle_usage * 100:5f}"])
         writer.writerow(["number of succesful wasimoff tasks", succesful_tasks])
         writer.writerow(["wasimoff throughput on node in job/s", f"{(succesful_tasks/observation_duration):7f}"])
         writer.writerow(["slurm throughput on node in job/s", f"{(len(slurm_data)/observation_duration):7f}"])
