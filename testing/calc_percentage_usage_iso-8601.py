@@ -4,8 +4,7 @@ import matplotlib.pyplot as pyplot
 from datetime import datetime, timedelta
 import pdb
 
-def sort_slurm_jobs(jobs : list) -> list:
-    return sorted(jobs, key=lambda dic: dic['start'])
+TIMESTAMP_READ_FORMAT='%Y-%m-%d %H:%M:%S'
 
 def analyse_cluster(report_name : str, observation_start : datetime, observation_end : datetime, succesful_tasks_total : int,
                     node_wasimoff_usage : list, node_slurm_usage : list, node_prolog_usage : list, node_epilog_usage : list, node_idle_usage : list, num_slurm_jobs : int):
@@ -114,6 +113,7 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
             mapping = {}
             with open(entry.path, 'r', encoding='utf-8') as file:
                 lines = file.readlines()
+                lines = filter(lambda x: not x.startswith('srun: '), lines)
                 num_nodes_in_job = 0 
                 for i in range(0,len(lines)):
                     split_line = lines[i].split()
@@ -304,7 +304,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
 
     return succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage
 
-# Add handling for slurm output
 def main():
     num_slurm_jobs = 0
     num_nodes = 0
@@ -351,9 +350,9 @@ def main():
     # Create datetime objects from timestamps
     with open(args.timestamp_file, 'r', encoding='utf-8') as timestamps:
         tmp = timestamps.readline().strip()
-        observation_start = datetime.fromisoformat(tmp[:26] + tmp[29:])
+        observation_start = datetime.strptime(tmp, TIMESTAMP_READ_FORMAT)
         tmp = timestamps.readline().strip()
-        observation_end = datetime.fromisoformat(tmp[:26] + tmp[29:])
+        observation_end = datetime.strptime(tmp, TIMESTAMP_READ_FORMAT)
         observation_duration = (observation_end - observation_start).total_seconds()
 
     # read slurm job data

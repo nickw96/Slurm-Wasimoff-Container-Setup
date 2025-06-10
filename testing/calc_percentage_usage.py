@@ -8,9 +8,6 @@ TIMESTAMP_READ_FORMAT='%Y-%m-%d %H:%M:%S'
 JOURNAL_TIME_READ_FORMAT='%Y %b %d %H:%M:%S'
 PRINT_TIME_FORMAT='%d/%m/%Y %H:%M:%S'
 
-def sort_slurm_jobs(jobs : list) -> list:
-    return sorted(jobs, key=lambda dic: dic['start'])
-
 def analyse_cluster(report_name : str, observation_start : datetime, observation_end : datetime, succesful_tasks_total : int,
                     node_wasimoff_usage : list, node_slurm_usage : list, node_prolog_usage : list, node_epilog_usage : list, node_idle_usage : list, num_slurm_jobs : int):
     total_wasimoff_usage = 0.0
@@ -118,6 +115,7 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
             mapping = {}
             with open(entry.path, 'r', encoding='utf-8') as file:
                 lines = file.readlines()
+                lines = filter(lambda x: not x.startswith('srun: '), lines)
                 num_nodes_in_job = 0 
                 for i in range(0,len(lines)):
                     split_line = lines[i].split()
@@ -318,7 +316,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
 
     return succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage
 
-# Add handling for slurm output
 def main():
     num_slurm_jobs = 0
     num_nodes = 0
