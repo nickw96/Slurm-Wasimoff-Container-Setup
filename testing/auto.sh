@@ -34,8 +34,8 @@ until [ $num = 51 ]; do
     num=$(($num + 1))
     sleep $(($RANDOM % 5 + 1))
 done
-
-jobs=$(squeue -O jobid | sed -e '/^JOBID/d;s/ //g;:a;N;$!ba;s/\n/:/g;s/ //g')
+# Delete lines starting with JOBID;concatenate all lines (a is label for a goto), continue loop until last line ($);replace all newlines with ':';remove all whitespaces
+jobs=$(squeue -O jobid | sed -e '/^JOBID/d;:a;N;$!ba;s/\n/:/g;s/ //g')
 # get end of observation
 srun -N3 -d afterany:$jobs date +'%Y-%m-%d %H:%M:%S' | sed -e '1!d' >> server/log_$date_of_start.txt
 kill $WASI_SPAWN

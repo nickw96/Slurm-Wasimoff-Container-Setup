@@ -13,15 +13,14 @@ if [ "$1" = 'controller' ]; then
     if [ "$2" = 'first' ]; then
         apt install -fy slurmctld
         touch /var/slurmctld.pid
-        wget -O /var/tmp/go1.24.0.linux-amd64.tar.gz https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
-        tar -C /usr/local -xzf /var/tmp/go1.24.0.linux-amd64.tar.gz
+        # wget -O /var/tmp/go1.24.0.linux-amd64.tar.gz https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
+        # tar -C /usr/local -xzf /var/tmp/go1.24.0.linux-amd64.tar.gz
         echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
-        export PATH=$PATH:/usr/local/go/bin
     fi
-    export PATH=$PATH:/usr/local/go/bin
-    cd prototype/broker
-    go build -buildvcs=false ./
-    cd ../..
+    # export PATH=$PATH:/usr/local/go/bin
+    # cd prototype/broker
+    # go build -buildvcs=false ./
+    # cd ../..
     # cp -f prototype/broker/broker /bin/
     cp -f slurm-resources/wasimoff_broker.service /etc/systemd/system/wasimoff_broker.service
     if [[ $3 == *"_pure"* ]]; then
