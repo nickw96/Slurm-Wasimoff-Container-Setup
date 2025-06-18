@@ -92,5 +92,6 @@ esac
 cp -f slurm-resources/cgroup.conf /etc/slurm/cgroup.conf
 cp -f slurm-resources/prolog.sh /etc/slurm/prolog.sh
 cp -f slurm-resources/epilog.sh /etc/slurm/epilog.sh
+cp -f slurm-resources/check_alloc_node.py /etc/slurm/check_alloc_node.py
 systemctl daemon-reload
 apt-get clean
