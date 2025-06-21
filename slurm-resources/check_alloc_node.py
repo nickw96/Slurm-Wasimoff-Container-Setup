@@ -1,4 +1,4 @@
-import sys
+import sys, functools
 import subprocess as sb
 
 def check_if_node_in_alloc(node_number, alloc_nodes):
@@ -19,22 +19,20 @@ def main():
     try:
         arg1 = sys.argv[1]
     except IndexError:
-        raise SystemExit(f"Usage: {sys.argv[0]} <node_number> <filtered input from squeue/sed>")
+        raise SystemExit(f"Usage: {sys.argv[0]} <node_number> <filtered input from squeue/sed as pairs>")
+    
+    len_sys_argv = len(list(sys.argv))
         
-    try:
-        # assumption: if there is a suspended job, there will be 2 arguments due to query format
-        arg2 = sys.argv[2]
-        arg3 = sys.argv[3]
-    except IndexError:
-        sb.run(["bash", "systemctl", "enable", "--now", "wasimoff_provider.service"])
+    if len_sys_argv % 2 == 1:
+        raise SystemExit("missing inputs from hostname or sed")
+    elif len_sys_argv < 3:
+        sb.run(["sudo", "systemctl", "enable", "--now", "wasimoff_provider.service"])
         return
     
     node_number = int(arg1)
     translation_table = dict.fromkeys(map(ord, 'com[]'), None)
-    alloc_nodes = arg3.translate(translation_table)
-    if not check_if_node_in_alloc(node_number, alloc_nodes):
-        sb.run(["bash", "systemctl", "enable", "--now", "wasimoff_provider.service"])
-        
+    if not functools.reduce(lambda acc, y: acc and check_if_node_in_alloc(node_number, sys.argv[y].translate(translation_table)), list(range(3,len_sys_argv,2)), True):
+        sb.run(["sudo", "systemctl", "enable", "--now", "wasimoff_provider.service"])
 
 
 if __name__ == '__main__':
