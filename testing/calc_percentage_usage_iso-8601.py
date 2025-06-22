@@ -183,7 +183,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     # initialize objects
     tasks_per_period = [{}]
     effective_tasks_per_period = []
-    wasimoff_period = []
     tasks_total = 0
     succesful_tasks = 0
     failed_tasks = 0
@@ -212,11 +211,12 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                 tasks_per_period[-1][line_split[-2]]['state'] = 'wasi_complete'
                 tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] - tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
             elif "Start running task" in line:
-                tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'state' : 'wasi_abort'}
+                tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'end' : observation_end, 'state' : 'wasi_abort'}
+                tasks_per_period[-1][line_split[-1]]['duration'] = (tasks_per_period[-1][line_split[-1]]['end'] - tasks_per_period[-1][line_split[-1]]['start']).total_seconds()
                 tasks_total += 1
             elif "[Wasimoff] starting Provider in Deno" in line:
                 tasks_per_period.append({})
-            elif "aborted tasks" in line:
+            elif "aborted tasks" in line or "wasimoff_provider.service: Deactivated successfully" in line:
                 for task_id in tasks_per_period[-1].keys():
                     if tasks_per_period[-1][task_id]['state'] == 'wasi_abort':
                         tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
@@ -294,11 +294,13 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                     time_line.append({'start' : time_line[-1]['end'], 'end' : tmp_list[tmp]['end'], 'state' : 'slurm'})
                     time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
                     time_line[-3]['end'] = tmp_list[tmp + tmp2]['start']
+                    time_line[-3]['duration'] = (time_line[-3]['end'] - time_line[-3]['start']).total_seconds()
                 elif tmp_list[tmp + tmp2]['state'] == 'epilog':
                     time_line.append(tmp_list[tmp + tmp2])
                     time_line.append({'start' : time_line[-1]['end'], 'end' : tmp_list[tmp]['end'], 'state' : 'slurm'})
                     time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
                     time_line[-3]['end'] = tmp_list[tmp + tmp2]['start']
+                    time_line[-3]['duration'] = (time_line[-3]['end'] - time_line[-3]['start']).total_seconds()
                 tmp2 += 1
         else:
             if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
@@ -320,7 +322,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                 'duration_perc' : time_slot['duration'] / observation_duration
             })
             match time_slot['state']:
-                case 'wasiwasi_completemoff' :
+                case 'wasi_complete' :
                     wasimoff_total_duration += time_slot['duration']
                 case 'wasi_abort' :
                     wasimoff_loss_duration += time_slot['duration']
