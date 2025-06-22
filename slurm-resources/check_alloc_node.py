@@ -31,7 +31,8 @@ def main():
     
     node_number = int(arg1)
     translation_table = dict.fromkeys(map(ord, 'com[]'), None)
-    if not functools.reduce(lambda acc, y: acc and check_if_node_in_alloc(node_number, sys.argv[y].translate(translation_table)), list(range(3,len_sys_argv,2)), True):
+    cond = functools.reduce(lambda acc, y: acc and not check_if_node_in_alloc(node_number, sys.argv[y].translate(translation_table)), list(range(3,len_sys_argv,2)), True)
+    if cond:
         sb.run(["sudo", "systemctl", "enable", "--now", "wasimoff_provider.service"])
 
 
