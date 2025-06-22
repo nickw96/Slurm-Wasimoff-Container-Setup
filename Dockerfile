@@ -16,86 +16,57 @@
 # most recent version of that image when you build your Dockerfile.
 # If reproducibility is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine@sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
-FROM trfore/docker-ubuntu2404-systemd:latest AS base
+FROM trfore/docker-debian12-systemd:latest AS base
 # SHELL [ "/bin/bash", "-c" ]
 # get dependencies
 RUN apt update
-RUN apt -fy install wget unzip iputils-ping dbus
+RUN apt -fy install wget unzip iputils-ping dbus python3
 # setup slurm
-RUN apt-get install -y build-essential fakeroot devscripts equivs
+RUN apt install -y build-essential slurm-client
 ## setup munge
 # get munge by apt
-RUN apt -fy install munge && \
-    systemctl disable munge
+RUN apt -fy install munge
 # copy slurm.conf
 COPY slurm-resources/slurm.conf /etc/slurm/
-# create slurm directories and files
-# RUN mkdir /var/run/slurm && \
-#     mkdir /var/spool/slurm && \
-#     mkdir /var/log/slurm && \
-#     > /var/run/slurm/slurmd.pid && \
-#     > /var/spool/slurm/slurmd && \
-#     > /var/log/slurm/slurmd.log
-# general slurm stuff
-RUN mkdir /slurm-packages && \
-    wget -O /slurm-packages/slurm-24.11.1.tar.bz2 https://download.schedmd.com/slurm/slurm-24.11.1.tar.bz2 && \
-    tar -C /slurm-packages -xaf /slurm-packages/slurm-24.11.1.tar.bz2
-WORKDIR /slurm-packages/slurm-24.11.1
-RUN mk-build-deps -i -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control && \
-    debuild -b -uc -us
-WORKDIR /
-RUN apt install -fy /slurm-packages/slurm-smd_24.11.1-1_amd64.deb /slurm-packages/slurm-smd-client_24.11.1-1_amd64.deb
-#create slurm user
-ARG UID=10001
-RUN adduser \
-    -c "SLURM Workload Manager"\
-    # --home-dir /var/lib/slurm\
-    --disabled-password \
-    --gecos "" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    slurm
-# transfer ownership to slurm user
-# RUN chown -R slurm: /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ && \
-#     sudo -u slurm chmod -R 0755 /etc/slurm/ /var/run/slurm/ /var/spool/slurm/ /var/log/slurm/ /var/spool/slurm/slurmd
+COPY slurm-resources/cgroup.conf /etc/slurm/
+COPY slurm-resources/prolog.sh /etc/slurm/
+COPY slurm-resources/epilog.sh /etc/slurm/
 
 FROM base AS computer
 # get and setup deno
-RUN wget -O /var/tmp/deno-2-1-6.zip https://github.com/denoland/deno/releases/download/v2.1.6/deno-x86_64-unknown-linux-gnu.zip && \
-    unzip -d /bin /var/tmp/deno-2-1-6.zip && \
+RUN wget -O /var/tmp/deno-2-2-11.zip https://github.com/denoland/deno/releases/download/v2.2.11/deno-x86_64-unknown-linux-gnu.zip && \
+    unzip -d /bin /var/tmp/deno-2-2-11.zip && \
     chmod +x /bin/deno
 # copy wasimoff denoprovider
-COPY  prototype/denoprovider /bin/wasimoff_provider/denoprovider/
-COPY  prototype/webprovider /bin/wasimoff_provider/webprovider/
+RUN mkdir /bin/wasimoff_provider && ln -s /bin/wasimoff_provider /wasimoff_system
+COPY prototype/denoprovider /bin/wasimoff_provider/denoprovider/
+COPY prototype/webprovider /bin/wasimoff_provider/webprovider/
+COPY slurm-resources/wasimoff_provider.service /etc/systemd/system/
 # setup slurm for compute node
-RUN apt install -fy /slurm-packages/slurm-smd-slurmd_24.11.1-1_amd64.deb
+RUN apt install -fy slurmd
+RUN touch /var/slurmd.pid
 # create missing, daemon specific directories
 # RUN sudo -u slurm mkdir /var/spool/slurm/slurmd
 # RUN systemctl enable slurmd
-RUN rm -rf /slurm-packages
 # copy startup script for slurmd
-COPY --chmod=100 compute-node/start_compute_node.sh /bin/start_compute_node.sh
 # chmod 100 /bin/start_compute_node.sh
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_compute_node.sh"]
 
 
 FROM base AS controller
-# get and setup go
-RUN wget -O /var/tmp/go1.23.5.linux-amd64.tar.gz https://go.dev/dl/go1.23.3.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf /var/tmp/go1.23.5.linux-amd64.tar.gz
 # copy wasimoff broker
-COPY prototype/broker /bin/broker/
+COPY slurm-resources/wasimoff_broker.service /etc/systemd/system/
+COPY prototype/broker/broker /usr/bin/broker/
 # setup slurm for controller node
-RUN apt install -fy /slurm-packages/slurm-smd-slurmctld_24.11.1-1_amd64.deb
-# create missing, daemon specific directories
-# RUN sudo -u slurm mkdir /var/spool/slurm/slurmctld
-# RUN systemctl enable slurmctld
-RUN rm -rf /slurm-packages
-# copy startup script for slurmctld
-COPY --chmod=100 controller-node/start_controller_node.sh /bin/start_controller_node.sh
-# create neccessary directories with correct ownership
-# chmod 100 /bin/start_controller_node.sh
+RUN apt install -fy slurmctld
+RUN touch /var/slurmctld.pid
+# copy programs and files for slurm execution to NON root directory
+COPY Proxels/proxels /bin/
+COPY prototype/wasi-apps/travelling_salesman/tsp /bin/
+COPY CloverLeaf_Serial/clover_leaf /bin/
+COPY CloverLeaf_Serial/InputDecks/clover_bm.in /bin/
+COPY CloverLeaf_Serial/InputDecks/clover_bm2.in /bin/
+COPY CloverLeaf_Serial/InputDecks/clover_bm4.in /bin/
 RUN apt-get clean
 # ENTRYPOINT ["/bin/start_controller_node.sh"]
