@@ -33,6 +33,7 @@ RUN mkdir /var/run/slurm && \
 # copy slurm.conf | adapt to config
 COPY slurm-resources/slurm_gang.conf /etc/slurm/slurm.conf
 COPY slurm-resources/cgroup.conf /etc/slurm/
+COPY slurm-resources/check_alloc_node.py /etc/slurm/check_alloc_node.py
 COPY slurm-resources/prolog.sh /etc/slurm/
 COPY slurm-resources/epilog.sh /etc/slurm/
 ARG UID=10001
