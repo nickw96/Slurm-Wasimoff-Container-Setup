@@ -35,6 +35,15 @@ COPY slurm-resources/slurm_gang.conf /etc/slurm/slurm.conf
 COPY slurm-resources/cgroup.conf /etc/slurm/
 COPY slurm-resources/prolog.sh /etc/slurm/
 COPY slurm-resources/epilog.sh /etc/slurm/
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home /home/controller \
+    --shell "/sbin/nologin" \
+    --uid "${UID}" \
+    controller
+    #--no-create-home \
 
 FROM base AS computer
 # get and setup deno
