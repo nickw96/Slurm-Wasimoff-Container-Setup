@@ -20,9 +20,10 @@ echo "$(date -Ins)" >> server/log_$date_of_start.txt
 num=1
 until [ $num = 51 ]; do
     i=$(($RANDOM % 3 + 1))
-    j=$(($RANDOM % 9 + 1))
+    sec_ran=$RANDOM
+    j=$(($sec_ran % 9 + 1))
     if [ "$1" = 'preempt' ]; then
-        k=$(($RANDOM % 2))
+        k=$(($sec_ran % 2))
         if [[ $k -gt 0 ]]; then
             sbatch -N$i -p highPrio -o /media/server/job_$num.txt Slurm-Wasimoff-Container-Setup/jobs/job_$(echo $j)_iso-8601.sh
         else
