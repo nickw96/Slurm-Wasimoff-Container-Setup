@@ -41,11 +41,11 @@ Failed wasimoff tasks over whole cluster:           {failed_tasks_total}
 Slurm jobs over whole cluster:                      {num_slurm_jobs}
 Slurm job throuput [job/s]:                         {(num_slurm_jobs/observation_duration):7f}
 Wasimoff task throuput [task/s]:                    {(succesful_tasks_total/observation_duration):7f}
-Slurm utilization in %:                             {total_slurm_usage*100:5f}
-Wasimoff utilzation in %:                           {total_wasimoff_usage*100:5f}
-Cluster in prolog in %:                             {total_prolog*100:5f}
-Cluster in epilog in %:                             {total_epilog*100:5f}
-Cluster idle in %:                                  {total_idle*100:5f}
+Slurm utilization in [%]:                           {total_slurm_usage*100:5f}
+Wasimoff utilzation in [%]:                         {total_wasimoff_usage*100:5f}
+Cluster in prolog in [%]:                           {total_prolog*100:5f}
+Cluster in epilog in [%]:                           {total_epilog*100:5f}
+Cluster idle in [%]:                                {total_idle*100:5f}
 """
         report.write(report_str)
 
