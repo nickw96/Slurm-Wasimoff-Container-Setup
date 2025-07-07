@@ -3,7 +3,7 @@
 # setup wasimoff broker environment; upload necessary binaries
 RANDOM=1
 
-# müssen in client verzeichnis aufgerufen werden
+# muessen in client verzeichnis aufgerufen werden
 cd Slurm-Wasimoff-Container-Setup/prototype/client
 ./client -upload examples/tsp/tsp.wasm
 ./client -upload ../../Proxels/proxels.wasm
