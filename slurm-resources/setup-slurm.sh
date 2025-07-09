@@ -4,9 +4,9 @@ controllerip=$4
 com0ip=$5
 com1ip=$6
 com2ip=$7
-apt update
-apt install -fy slurm-client curl 
 if [ "$2" = 'first' ]; then
+    apt update 
+    apt install -fy slurm-client curl
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 fi
 if [ "$1" = 'controller' ]; then
