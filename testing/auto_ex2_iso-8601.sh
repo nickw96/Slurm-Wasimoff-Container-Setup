@@ -17,7 +17,7 @@ echo "$(date -Ins)" >> server/log_$date_of_start.txt
 
 # sbatch -N(#nodes) -w (specific nodes) -D (path to working dir) -o (output if desired) script.sh
 sbatch -N3 -o /media/server/job_sleep.txt Slurm-Wasimoff-Container-Setup/jobs/job_sleep.sh
-sbatch -N2 -o /media/server/job_1.txt Slurm-Wasimoff-Container-Setup/jobs/job_1.sh
+sbatch -N2 -o /media/server/job_1.txt Slurm-Wasimoff-Container-Setup/jobs/job_1_iso-8601.sh
 
 # Delete lines starting with JOBID;concatenate all lines (a is label for a goto), continue loop until last line ($);replace all newlines with ':';remove all whitespaces
 jobs=$(squeue -O jobid | sed -e '/^JOBID/d;:a;N;$!ba;s/\n/:/g;s/ //g')
