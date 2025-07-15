@@ -5,8 +5,8 @@ RANDOM=1
 
 # muessen in client verzeichnis aufgerufen werden
 cd Slurm-Wasimoff-Container-Setup/prototype/client
-./client -broker "http://broker:4080" -upload examples/tsp/tsp.wasm
-./client -broker "http://broker:4080" -upload ../../Proxels/proxels.wasm
+./client -broker http://broker:4080 -upload examples/tsp/tsp.wasm
+./client -broker http://broker:4080 -upload ../../Proxels/proxels.wasm
 cd ../../..
 
 # start program in background to randomly generate wasimoff tasks
