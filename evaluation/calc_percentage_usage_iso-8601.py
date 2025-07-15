@@ -119,8 +119,9 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
         for entry in entries:
             mapping = {}
             with open(entry.path, 'r', encoding='utf-8') as file:
+                slurmstepd_lines = []
                 lines = file.readlines()
-                lines = list(filter(lambda x: not x.startswith('srun: '), lines))
+                lines = list(filter(lambda x: not x.startswith('srun: ') and not x.startswith('slurmstepd-'), lines))
                 num_nodes_in_job = 0 
                 for i in range(0,len(lines)):
                     split_line = lines[i].split()
@@ -128,9 +129,32 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
                         num_nodes_in_job += 1
                         mapping[split_line[0]] = split_line[1]
                 assert num_com_nodes >= num_nodes_in_job
+                i = 0
+                while i < len(lines):
+                    if ': slurmstepd-' in lines[i]:
+                        slurmstepd_lines.append(i)
+                        i += num_nodes_in_job
+                    else:
+                        i += 1
                 for i in range(0,num_nodes_in_job):
                     split_line = lines[i].split()
                     nodes_slurm_jobs[mapping[split_line[0]]].append({'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
+                if slurmstepd_lines:
+                    for slurmstepd_line_index in slurmstepd_lines:
+                        # get cancellation time
+                        for i in range(0, num_nodes_in_job):
+                            split_line = lines[slurmstepd_line_index + i].split()
+                            nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[-5])
+                            nodes_slurm_jobs[mapping[split_line[0]]][-1]['duration'] = (nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] - 
+                                                                                nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
+                        # update mapping within job
+                        for i in range(num_nodes_in_job * 2, num_nodes_in_job * 3):
+                            split_line = lines[slurmstepd_line_index + i].split()
+                            mapping[split_line[0]] = split_line[1]
+                        # add next iteration
+                        for i in range(num_nodes_in_job, num_nodes_in_job * 2):
+                            split_line = lines[slurmstepd_line_index + i].split()
+                            nodes_slurm_jobs[mapping[split_line[0]]].append({'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
                 for i in range(-num_nodes_in_job,0):
                     split_line = lines[i].split()
                     nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[1][:26] + split_line[1][29:])
@@ -151,11 +175,14 @@ def read_prolog_data(dir : str, num_com_nodes : int) -> dict:
             for name in node_names:
                 if name in entry.name:
                     with open(entry.path, 'r', encoding='utf-8') as file:
-                        tmp = file.readline().strip()
-                        nodes_prologs[name].append({'start' : datetime.fromisoformat(tmp[:26] + tmp[29:]), 'state' : 'prolog'})
-                        tmp = file.readline().strip()
-                        nodes_prologs[name][-1]['end'] = datetime.fromisoformat(tmp[:26] + tmp[29:])
-                        nodes_prologs[name][-1]['duration'] = (nodes_prologs[name][-1]['end'] - nodes_prologs[name][-1]['start']).total_seconds()
+                        lines = list(file.readlines())
+                        prologs_in_file = len(lines) / 2
+                        for i in range(0,prologs_in_file):
+                            tmp = lines[i * 2].strip()
+                            nodes_prologs[name].append({'start' : datetime.fromisoformat(tmp[:26] + tmp[29:]), 'state' : 'prolog'})
+                            tmp = lines[i * 2 + 1].strip()
+                            nodes_prologs[name][-1]['end'] = datetime.fromisoformat(tmp[:26] + tmp[29:])
+                            nodes_prologs[name][-1]['duration'] = (nodes_prologs[name][-1]['end'] - nodes_prologs[name][-1]['start']).total_seconds()
 
     return nodes_prologs
 
@@ -171,11 +198,14 @@ def read_epilog_data(dir : str, num_com_nodes : int) -> dict:
             for name in node_names:
                 if name in entry.name:
                     with open(entry.path, 'r', encoding='utf-8') as file:
-                        tmp = file.readline().strip()
-                        nodes_epilogs[name].append({'start' : datetime.fromisoformat(tmp[:26] + tmp[29:]), 'state' : 'epilog'})
-                        tmp = file.readline().strip()
-                        nodes_epilogs[name][-1]['end'] = datetime.fromisoformat(tmp[:26] + tmp[29:])
-                        nodes_epilogs[name][-1]['duration'] = (nodes_epilogs[name][-1]['end'] - nodes_epilogs[name][-1]['start']).total_seconds()
+                        lines = list(file.readlines())
+                        epilogs_in_file = len(lines) / 2
+                        for i in range(0,epilogs_in_file):
+                            tmp = lines[i * 2].strip()
+                            nodes_epilogs[name].append({'start' : datetime.fromisoformat(tmp[:26] + tmp[29:]), 'state' : 'epilog'})
+                            tmp = lines[i * 2 + 1].strip()
+                            nodes_epilogs[name][-1]['end'] = datetime.fromisoformat(tmp[:26] + tmp[29:])
+                            nodes_epilogs[name][-1]['duration'] = (nodes_epilogs[name][-1]['end'] - nodes_epilogs[name][-1]['start']).total_seconds()
 
     return nodes_epilogs
 
@@ -254,14 +284,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                 effective_tasks_per_period += sorted_task_period_complete + sorted_task_period_abort
             else:
                 effective_tasks_per_period += sorted_task_period_abort
-            # if len(sorted_task_period_complete) > 0:
-            #     wasimoff_period.append({'start' : min([x['start'] for x in sorted_task_period_complete if True]), 'end' : max([x['end'] for x in sorted_task_period_complete if True]), 'state' : 'wasi_complete'})
-            #     wasimoff_period[-1]['duration'] = (wasimoff_period[-1]['end'] - wasimoff_period[-1]['start']).total_seconds()
-            #     wasimoff_period.append({'start' : wasimoff_period[-1]['end'], 'end' : max([x['end'] for x in sorted_task_period_abort if True]), 'state' : 'wasi_abort'})
-            #     wasimoff_period[-1]['duration'] = (wasimoff_period[-1]['end'] - wasimoff_period[-1]['start']).total_seconds()
-            # else:
-            #     wasimoff_period.append({'start' : min([x['start'] for x in sorted_task_period_abort if True]), 'end' : max([x['end'] for x in sorted_task_period_abort if True]), 'state' : 'wasi_abort'})
-            #     wasimoff_period[-1]['duration'] = (wasimoff_period[-1]['end'] - wasimoff_period[-1]['start']).total_seconds()
 
     sorted_slurm_data = sorted(slurm_data, key=lambda dic: (dic['start'], dic['end']))
     tmp = 1
