@@ -288,13 +288,53 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
         else:
           tmp += 1
       if len(sorted_task_period_complete) > 0:
-        last_completion = max([x['end'] for x in sorted_task_period_complete if True])
-        if sorted_task_period_abort[0]['start'] < last_completion:
-          sorted_task_period_abort[0]['start'] = max([x['end'] for x in sorted_task_period_complete if True])
-        effective_tasks_per_period += sorted_task_period_complete + sorted_task_period_abort
+        i = 0
+        j = 0
+        while i < len(sorted_task_period_complete) or j < len(sorted_task_period_abort):
+          if i >= len(sorted_task_period_complete):
+            if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
+              if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
+                raise Exception('there cannot be completed tasks after aborted ones')
+              else:
+                effective_tasks_per_period.append(sorted_task_period_abort[j])
+                effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                j += 1
+            else:
+              effective_tasks_per_period.append(sorted_task_period_abort[j])
+              j += 1
+          elif j < len(sorted_task_period_abort):
+            if sorted_task_period_complete[i]['start'] < sorted_task_period_abort[j]['start']:
+              effective_tasks_per_period.append(sorted_task_period_complete[i])
+              i += 1
+            else:
+              if i > 0 and effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
+                if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
+                  raise Exception('there cannot be completed tasks after aborted ones')
+                else:
+                  effective_tasks_per_period.append(sorted_task_period_abort[j])
+                  effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+                  effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                  j += 1
+              else:
+                effective_tasks_per_period.append(sorted_task_period_abort[j])
+                j += 1
+          else:
+            if effective_tasks_per_period[-1]['end'] > sorted_task_period_complete[i]['end']:
+              effective_tasks_per_period.append(sorted_task_period_complete[i])
+              effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-2]))
+              effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
+              effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
+              effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+              effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+              i += 1
+            else:
+              raise Exception('there cannot be completed tasks after aborted ones')
       else:
         effective_tasks_per_period += sorted_task_period_abort
 
+  for i in range(0,len(effective_tasks_per_period) - 1):
+    assert effective_tasks_per_period[i]['end'] <= effective_tasks_per_period[i + 1]['start']
   sorted_slurm_data = sorted(slurm_data, key=lambda dic: (dic['start'], dic['end']))
   tmp = 1
   while tmp < len(sorted_slurm_data):
@@ -335,18 +375,17 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           time_line[-3]['duration'] = (time_line[-3]['end'] - time_line[-3]['start']).total_seconds()
         tmp2 += 1
     elif tmp_list[tmp]['state'] == 'prolog':
-      if (time_line[-1]['state'] == 'wasi_abort' 
-          and time_line[-1]['end'] > tmp_list[tmp]['start']):
-        if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
-          time_line.append(
-            {
-              'start': time_line[-1]['end'],
-              'end' : tmp_list[tmp]['start'],
-              'state' : 'prolog',
-              'duration' : (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds()
-              }
-            )
-          tmp_list[tmp]
+      if (time_line[-1]['state'] == 'wasi_abort'
+        and time_line[-1]['end'] > tmp_list[tmp]['start']):
+          if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
+            time_line.append(
+              {
+                'start': time_line[-1]['end'],
+                'end' : tmp_list[tmp]['end'],
+                'state' : 'prolog',
+                'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()
+                }
+              )
       elif (tmp_list[tmp + 1]['state'] == 'wasi_abort' 
             and tmp_list[tmp]['end'] > tmp_list[tmp + 1]['start']):
           time_line.append(deepcopy(tmp_list[tmp]))
