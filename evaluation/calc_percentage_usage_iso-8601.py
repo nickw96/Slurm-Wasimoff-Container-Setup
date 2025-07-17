@@ -246,8 +246,8 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
         tasks_per_period[-1][line_split[-2]]['state'] = 'wasi_complete'
         tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] - tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
       elif "Start running task" in line:
-        tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'end' : observation_end, 'state' : 'wasi_abort'}
-        tasks_per_period[-1][line_split[-1]]['duration'] = (tasks_per_period[-1][line_split[-1]]['end'] - tasks_per_period[-1][line_split[-1]]['start']).total_seconds()
+        tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'state' : 'wasi_abort'}
+        #tasks_per_period[-1][line_split[-1]]['duration'] = (tasks_per_period[-1][line_split[-1]]['end'] - tasks_per_period[-1][line_split[-1]]['start']).total_seconds()
         tasks_total += 1
       elif "[Wasimoff] starting Provider in Deno" in line:
         tasks_per_period.append({})
@@ -375,7 +375,24 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           time_line[-3]['duration'] = (time_line[-3]['end'] - time_line[-3]['start']).total_seconds()
         tmp2 += 1
     elif tmp_list[tmp]['state'] == 'prolog':
-      if (time_line[-1]['state'] == 'wasi_abort'
+      # TODO clean up the cluster fuck (technisch gesehen müssten zwei der Kontrollpfade zusammenfassbar sein; außerdem kann die tmp+tmp2 Schleife nach außen geschoben werden, potentiell entfällt dadurch ein Kontrollfluss \o/)
+      if (time_line[-1]['state'] == 'wasi_complete' 
+          and time_line[-1]['end'] > tmp_list[tmp]['start']):
+        time_line.append(deepcopy(tmp_list[tmp]))
+        time_line[-1]['start'] = time_line[-2]['end']
+        time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+        while tmp_list[tmp]['end'] > tmp_list[tmp + tmp2]['end']:
+          time_line[-1]['end'] = tmp_list[tmp + tmp2]['start']
+          time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+          time_line.append(tmp_list[tmp + tmp2])
+          time_line.append({
+            'start' : time_line[-1]['end'],
+            'end' : tmp_list[tmp]['end'],
+            'state' : 'prolog',
+            'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()
+          })
+          tmp2 += 1  
+      elif (time_line[-1]['state'] == 'wasi_abort'
         and time_line[-1]['end'] > tmp_list[tmp]['start']):
           if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
             time_line.append(
@@ -394,9 +411,9 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           if tmp_list[tmp]['end'] > tmp_list[tmp + 1]['end']:
             time_line.append(
               {'start' : time_line[-1]['end'],
-               'end' : tmp_list[tmp]['start'],
+               'end' : tmp_list[tmp]['end'],
                'state' : 'prolog',
-               'duration' : (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds()})
+               'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()})
           tmp += 1
       else:
         if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
