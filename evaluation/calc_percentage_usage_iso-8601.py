@@ -96,7 +96,7 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
   for state in ['slurm', 'wasi_complete', 'wasi_abort', 'idle', 'prolog', 'epilog']:
     patches.append(matplotlib.patches.Patch(color=color_of_state(state)))
 
-  ax.legend(handles=patches, labels=['slurm', 'wasi_complete', 'wasi_abort', 'idle', 'prolog', 'epilog'], fontsize=12, bbox_to_anchor=(1.13, 0.81))
+  ax.legend(handles=patches, labels=['slurm', 'wasi_\ncomplete', 'wasi_abort', 'idle', 'prolog', 'epilog'], fontsize=12, bbox_to_anchor=(0.955, 0.75))
 
   pyplot.xticks(fontsize=14)
   pyplot.xlabel('Zeit in s', loc='right', fontsize=16)
@@ -104,7 +104,7 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
   pyplot.gca().invert_yaxis()
   # pyplot.show()
   # fig.set_figheight(6)
-  fig.set_figwidth(11)
+  fig.set_figwidth(12)
   pyplot.savefig(report_name + '_plot.png', dpi=500)
   # pyplot.savefig(report_name + '_plot.png')
 
@@ -233,12 +233,16 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
   prolog_total_duration = 0
   epilog_total_duration = 0
   idle_total_duration = 0
-  time_line = []
+  time_line = [{'start' : observation_start,
+                'end' : observation_start,
+                'state' : 'idle',
+                'duration' : 0.0}]
 
   with open(log, 'r', encoding='utf-8') as logfile:
-    lines = logfile.readlines()
+    lines = list(logfile.readlines())
     
-    for line in lines:
+    for i in range(0,len(lines)):
+      line = lines[i]
       line_split = line.split()
       if "Task" in line and "completed" in line:
         succesful_tasks += 1
@@ -260,6 +264,11 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
         for task_id in tasks_per_period[-1].keys():
           if not 'end' in tasks_per_period[-1][task_id].keys():
             tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
+            tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+      if i == len(lines) - 1:
+        for task_id in tasks_per_period[-1].keys():
+          if not 'end' in tasks_per_period[-1][task_id].keys():
+            tasks_per_period[-1][task_id]['end'] = observation_end
             tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
 
   for tasks in tasks_per_period:
@@ -376,48 +385,48 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
         tmp2 += 1
     elif tmp_list[tmp]['state'] == 'prolog':
       # TODO clean up the cluster fuck (technisch gesehen müssten zwei der Kontrollpfade zusammenfassbar sein; außerdem kann die tmp+tmp2 Schleife nach außen geschoben werden, potentiell entfällt dadurch ein Kontrollfluss \o/)
-      if (time_line[-1]['state'] == 'wasi_complete' 
+      if ('wasi_' in time_line[-1]['state'] 
           and time_line[-1]['end'] > tmp_list[tmp]['start']):
         time_line.append(deepcopy(tmp_list[tmp]))
         time_line[-1]['start'] = time_line[-2]['end']
         time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
-        while tmp_list[tmp]['end'] > tmp_list[tmp + tmp2]['end']:
-          time_line[-1]['end'] = tmp_list[tmp + tmp2]['start']
-          time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
-          time_line.append(tmp_list[tmp + tmp2])
-          time_line.append({
-            'start' : time_line[-1]['end'],
-            'end' : tmp_list[tmp]['end'],
-            'state' : 'prolog',
-            'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()
-          })
-          tmp2 += 1  
-      elif (time_line[-1]['state'] == 'wasi_abort'
-        and time_line[-1]['end'] > tmp_list[tmp]['start']):
-          if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
-            time_line.append(
-              {
-                'start': time_line[-1]['end'],
-                'end' : tmp_list[tmp]['end'],
-                'state' : 'prolog',
-                'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()
-                }
-              )
-      elif (tmp_list[tmp + 1]['state'] == 'wasi_abort' 
-            and tmp_list[tmp]['end'] > tmp_list[tmp + 1]['start']):
-          time_line.append(deepcopy(tmp_list[tmp]))
-          time_line[-1]['end'] = tmp_list[tmp + 1]['start']
-          time_line.append(tmp_list[tmp + 1])
-          if tmp_list[tmp]['end'] > tmp_list[tmp + 1]['end']:
-            time_line.append(
-              {'start' : time_line[-1]['end'],
-               'end' : tmp_list[tmp]['end'],
-               'state' : 'prolog',
-               'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()})
-          tmp += 1
+      # elif (time_line[-1]['state'] == 'wasi_abort'
+      #   and time_line[-1]['end'] > tmp_list[tmp]['start']):
+      #     if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
+      #       time_line.append(
+      #         {
+      #           'start': time_line[-1]['end'],
+      #           'end' : tmp_list[tmp]['end'],
+      #           'state' : 'prolog',
+      #           'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()
+      #           }
+      #         )
+      # elif (tmp_list[tmp + 1]['state'] == 'wasi_abort' 
+      #       and tmp_list[tmp]['end'] > tmp_list[tmp + 1]['start']):
+      #     time_line.append(deepcopy(tmp_list[tmp]))
+      #     time_line[-1]['end'] = tmp_list[tmp + 1]['start']
+      #     time_line.append(tmp_list[tmp + 1])
+      #     if tmp_list[tmp]['end'] > tmp_list[tmp + 1]['end']:
+      #       time_line.append(
+      #         {'start' : time_line[-1]['end'],
+      #          'end' : tmp_list[tmp]['end'],
+      #          'state' : 'prolog',
+      #          'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()})
+      #     tmp += 1
       else:
         if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
           time_line.append(tmp_list[tmp])
+      while tmp_list[tmp]['end'] > tmp_list[tmp + tmp2]['end']:
+        time_line[-1]['end'] = tmp_list[tmp + tmp2]['start']
+        time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
+        time_line.append(tmp_list[tmp + tmp2])
+        time_line.append({
+          'start' : time_line[-1]['end'],
+          'end' : tmp_list[tmp]['end'],
+          'state' : 'prolog',
+          'duration' : (tmp_list[tmp]['end'] - time_line[-1]['end']).total_seconds()
+        })
+        tmp2 += 1
     else:
       if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
         time_line.append(tmp_list[tmp])
