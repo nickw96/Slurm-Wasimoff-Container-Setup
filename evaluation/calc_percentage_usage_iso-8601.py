@@ -17,12 +17,13 @@ def analyse_cluster(report_name : str, observation_start : datetime, observation
   total_idle = 0.0
   num_nodes = len(node_wasimoff_usage)
   observation_duration = (observation_end - observation_start).total_seconds()
-  for i in range(0,len(node_wasimoff_usage)):
-    total_wasimoff_usage += node_wasimoff_usage[i]
+  for i in range(0,len(node_slurm_usage)):
     total_slurm_usage += node_slurm_usage[i]
-    total_prolog += node_prolog_usage[i]
-    total_epilog += node_epilog_usage[i]
     total_idle += node_idle_usage[i]
+    if len(node_wasimoff_usage) > 0:
+      total_wasimoff_usage += node_wasimoff_usage[i]
+      total_prolog += node_prolog_usage[i]
+      total_epilog += node_epilog_usage[i]
 
   total_prolog /= num_nodes
   total_epilog /= num_nodes
@@ -238,87 +239,72 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                 'state' : 'idle',
                 'duration' : 0.0}]
 
-  with open(log, 'r', encoding='utf-8') as logfile:
-    lines = list(logfile.readlines())
-    
-    for i in range(0,len(lines)):
-      line = lines[i]
-      line_split = line.split()
-      if "Task" in line and "completed" in line:
-        if line_split[-2] in tasks_per_period[-1].keys():
-          succesful_tasks += 1
-          tasks_per_period[-1][line_split[-2]]['end'] = datetime.fromisoformat(line_split[0])
-          tasks_per_period[-1][line_split[-2]]['state'] = 'wasi_complete'
-          tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] - tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
-      elif "Start running task" in line:
-        tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'state' : 'wasi_abort'}
-        #tasks_per_period[-1][line_split[-1]]['duration'] = (tasks_per_period[-1][line_split[-1]]['end'] - tasks_per_period[-1][line_split[-1]]['start']).total_seconds()
-        tasks_total += 1
-      elif "[Wasimoff] starting Provider in Deno" in line:
-        tasks_per_period.append({})
-      elif "aborted tasks" in line:
-        for task_id in tasks_per_period[-1].keys():
-          if tasks_per_period[-1][task_id]['state'] == 'wasi_abort':
-            tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
-            tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
-      elif "Stopped wasimoff_provider.service" in line:
-        for task_id in tasks_per_period[-1].keys():
-          if not 'end' in tasks_per_period[-1][task_id].keys():
-            tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
-            tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
-      if i == len(lines) - 1:
-        for task_id in tasks_per_period[-1].keys():
-          if not 'end' in tasks_per_period[-1][task_id].keys():
-            tasks_per_period[-1][task_id]['end'] = observation_end
-            tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+  if log != "":
+    with open(log, 'r', encoding='utf-8') as logfile:
+      lines = list(logfile.readlines())
 
-  for tasks in tasks_per_period:
-    if not tasks == {}:
-      sorted_tasks = sorted(tasks.values(), key=lambda dic: (dic['start'], dic['end']))
-      sorted_task_period_complete = list(filter(lambda x: x['state'] == 'wasi_complete', sorted_tasks))
-      sorted_task_period_abort = list(filter(lambda x: x['state'] == 'wasi_abort', sorted_tasks))
-      tmp = 1
-      while tmp < len(sorted_task_period_complete):
-        if sorted_task_period_complete[tmp]['end'] <= sorted_task_period_complete[tmp - 1]['end']:
-          del sorted_task_period_complete[tmp]
-        elif sorted_task_period_complete[tmp]['start'] <= sorted_task_period_complete[tmp - 1]['end']:
-          sorted_task_period_complete[tmp - 1]['end'] = sorted_task_period_complete[tmp]['end']
-          del sorted_task_period_complete[tmp]
-          sorted_task_period_complete[tmp - 1]['duration'] = (sorted_task_period_complete[tmp - 1]['end'] - sorted_task_period_complete[tmp - 1]['start']).total_seconds()
-        else:
-          tmp += 1
-      tmp = 1
-      while tmp < len(sorted_task_period_abort):
-        if sorted_task_period_abort[tmp]['end'] <= sorted_task_period_abort[tmp - 1]['end']:
-          del sorted_task_period_abort[tmp]
-        elif sorted_task_period_abort[tmp]['start'] <= sorted_task_period_abort[tmp - 1]['end']:
-          sorted_task_period_abort[tmp - 1]['end'] = sorted_task_period_abort[tmp]['end']
-          del sorted_task_period_abort[tmp]
-          sorted_task_period_abort[tmp - 1]['duration'] = (sorted_task_period_abort[tmp - 1]['end'] - sorted_task_period_abort[tmp - 1]['start']).total_seconds()
-        else:
-          tmp += 1
-      if len(sorted_task_period_complete) > 0:
-        i = 0
-        j = 0
-        while i < len(sorted_task_period_complete) or j < len(sorted_task_period_abort):
-          if i >= len(sorted_task_period_complete):
-            if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
-              if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
-                raise Exception('there cannot be completed tasks after aborted ones')
-              else:
-                effective_tasks_per_period.append(sorted_task_period_abort[j])
-                effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
-                j += 1
-            else:
-              effective_tasks_per_period.append(sorted_task_period_abort[j])
-              j += 1
-          elif j < len(sorted_task_period_abort):
-            if sorted_task_period_complete[i]['start'] < sorted_task_period_abort[j]['start']:
-              effective_tasks_per_period.append(sorted_task_period_complete[i])
-              i += 1
-            else:
-              if i > 0 and effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
+      for i in range(0,len(lines)):
+        line = lines[i]
+        line_split = line.split()
+        if "Task" in line and "completed" in line:
+          if line_split[-2] in tasks_per_period[-1].keys():
+            succesful_tasks += 1
+            tasks_per_period[-1][line_split[-2]]['end'] = datetime.fromisoformat(line_split[0])
+            tasks_per_period[-1][line_split[-2]]['state'] = 'wasi_complete'
+            tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] - tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
+        elif "Start running task" in line:
+          tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'state' : 'wasi_abort'}
+          #tasks_per_period[-1][line_split[-1]]['duration'] = (tasks_per_period[-1][line_split[-1]]['end'] - tasks_per_period[-1][line_split[-1]]['start']).total_seconds()
+          tasks_total += 1
+        elif "[Wasimoff] starting Provider in Deno" in line:
+          tasks_per_period.append({})
+        elif "aborted tasks" in line:
+          for task_id in tasks_per_period[-1].keys():
+            if tasks_per_period[-1][task_id]['state'] == 'wasi_abort':
+              tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
+              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+        elif "Stopped wasimoff_provider.service" in line:
+          for task_id in tasks_per_period[-1].keys():
+            if not 'end' in tasks_per_period[-1][task_id].keys():
+              tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
+              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+        if i == len(lines) - 1:
+          for task_id in tasks_per_period[-1].keys():
+            if not 'end' in tasks_per_period[-1][task_id].keys():
+              tasks_per_period[-1][task_id]['end'] = observation_end
+              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+
+    for tasks in tasks_per_period:
+      if not tasks == {}:
+        sorted_tasks = sorted(tasks.values(), key=lambda dic: (dic['start'], dic['end']))
+        sorted_task_period_complete = list(filter(lambda x: x['state'] == 'wasi_complete', sorted_tasks))
+        sorted_task_period_abort = list(filter(lambda x: x['state'] == 'wasi_abort', sorted_tasks))
+        tmp = 1
+        while tmp < len(sorted_task_period_complete):
+          if sorted_task_period_complete[tmp]['end'] <= sorted_task_period_complete[tmp - 1]['end']:
+            del sorted_task_period_complete[tmp]
+          elif sorted_task_period_complete[tmp]['start'] <= sorted_task_period_complete[tmp - 1]['end']:
+            sorted_task_period_complete[tmp - 1]['end'] = sorted_task_period_complete[tmp]['end']
+            del sorted_task_period_complete[tmp]
+            sorted_task_period_complete[tmp - 1]['duration'] = (sorted_task_period_complete[tmp - 1]['end'] - sorted_task_period_complete[tmp - 1]['start']).total_seconds()
+          else:
+            tmp += 1
+        tmp = 1
+        while tmp < len(sorted_task_period_abort):
+          if sorted_task_period_abort[tmp]['end'] <= sorted_task_period_abort[tmp - 1]['end']:
+            del sorted_task_period_abort[tmp]
+          elif sorted_task_period_abort[tmp]['start'] <= sorted_task_period_abort[tmp - 1]['end']:
+            sorted_task_period_abort[tmp - 1]['end'] = sorted_task_period_abort[tmp]['end']
+            del sorted_task_period_abort[tmp]
+            sorted_task_period_abort[tmp - 1]['duration'] = (sorted_task_period_abort[tmp - 1]['end'] - sorted_task_period_abort[tmp - 1]['start']).total_seconds()
+          else:
+            tmp += 1
+        if len(sorted_task_period_complete) > 0:
+          i = 0
+          j = 0
+          while i < len(sorted_task_period_complete) or j < len(sorted_task_period_abort):
+            if i >= len(sorted_task_period_complete):
+              if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
                 if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
                   raise Exception('there cannot be completed tasks after aborted ones')
                 else:
@@ -329,26 +315,43 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
               else:
                 effective_tasks_per_period.append(sorted_task_period_abort[j])
                 j += 1
-          else:
-            if effective_tasks_per_period[-1]['end'] > sorted_task_period_complete[i]['end']:
-              effective_tasks_per_period.append(sorted_task_period_complete[i])
-              effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-2]))
-              effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
-              effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
-              effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-              effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
-              i += 1
-            else:
-              if len(sorted_task_period_abort) > 0:
-                raise Exception('there cannot be completed tasks after aborted ones')
-              else:
+            elif j < len(sorted_task_period_abort):
+              if sorted_task_period_complete[i]['start'] < sorted_task_period_abort[j]['start']:
                 effective_tasks_per_period.append(sorted_task_period_complete[i])
                 i += 1
-      else:
-        effective_tasks_per_period += sorted_task_period_abort
+              else:
+                if i > 0 and effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
+                  if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
+                    raise Exception('there cannot be completed tasks after aborted ones')
+                  else:
+                    effective_tasks_per_period.append(sorted_task_period_abort[j])
+                    effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+                    effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                    j += 1
+                else:
+                  effective_tasks_per_period.append(sorted_task_period_abort[j])
+                  j += 1
+            else:
+              if effective_tasks_per_period[-1]['end'] > sorted_task_period_complete[i]['end']:
+                effective_tasks_per_period.append(sorted_task_period_complete[i])
+                effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-2]))
+                effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
+                effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
+                effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                i += 1
+              else:
+                if len(sorted_task_period_abort) > 0:
+                  raise Exception('there cannot be completed tasks after aborted ones')
+                else:
+                  effective_tasks_per_period.append(sorted_task_period_complete[i])
+                  i += 1
+        else:
+          effective_tasks_per_period += sorted_task_period_abort
+    # TODO end of task evaluation
+    for i in range(0,len(effective_tasks_per_period) - 1):
+      assert effective_tasks_per_period[i]['end'] <= effective_tasks_per_period[i + 1]['start']
 
-  for i in range(0,len(effective_tasks_per_period) - 1):
-    assert effective_tasks_per_period[i]['end'] <= effective_tasks_per_period[i + 1]['start']
   sorted_slurm_data = sorted(slurm_data, key=lambda dic: (dic['start'], dic['end']))
   tmp = 1
   while tmp < len(sorted_slurm_data):
@@ -542,20 +545,30 @@ def main():
 
   # read and analyse 
   with os.scandir(args.wasimoff_logs) as entries:
-    for entry in entries:
-      if entry.name.endswith('.log'):
+    if list(entries) == []:
+      for node_name in slurm_data.keys():
         node_name = entry.name.split('_')[-1].split('.')[0]
         succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
-                                                                entry.path, slurm_data[node_name],
+                                                                "", slurm_data[node_name],
                                                                 prolog_data[node_name], epilog_data[node_name])
-        failed_tasks_total += failed_tasks
-        succesful_tasks_total += succesful_tasks
         node_time_lines.append(time_line)
-        node_wasimoff_usage.append(wasimoff_usage)
         node_slurm_usage.append(slurm_usage)
-        node_prolog_usage.append(prolog_usage)
-        node_epilog_usage.append(epilog_usage)
         node_idle_usage.append(idle_usage)
+    else:
+      for entry in entries:
+        if entry.name.endswith('.log'):
+          node_name = entry.name.split('_')[-1].split('.')[0]
+          succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
+                                                                  entry.path, slurm_data[node_name],
+                                                                  prolog_data[node_name], epilog_data[node_name])
+          failed_tasks_total += failed_tasks
+          succesful_tasks_total += succesful_tasks
+          node_time_lines.append(time_line)
+          node_wasimoff_usage.append(wasimoff_usage)
+          node_slurm_usage.append(slurm_usage)
+          node_prolog_usage.append(prolog_usage)
+          node_epilog_usage.append(epilog_usage)
+          node_idle_usage.append(idle_usage)
 
   analyse_cluster(args.timestamp_file.split('.')[0], observation_start, observation_end, succesful_tasks_total, 
           node_wasimoff_usage, node_slurm_usage, node_prolog_usage, node_epilog_usage, node_idle_usage, num_slurm_jobs, failed_tasks_total)
