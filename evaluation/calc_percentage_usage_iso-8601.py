@@ -15,7 +15,7 @@ def analyse_cluster(report_name : str, observation_start : datetime, observation
   total_prolog = 0.0
   total_epilog = 0.0
   total_idle = 0.0
-  num_nodes = len(node_wasimoff_usage)
+  num_nodes = len(node_slurm_usage)
   observation_duration = (observation_end - observation_start).total_seconds()
   for i in range(0,len(node_slurm_usage)):
     total_slurm_usage += node_slurm_usage[i]
@@ -97,7 +97,7 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
   for state in ['slurm', 'wasi_complete', 'wasi_abort', 'idle', 'prolog', 'epilog']:
     patches.append(matplotlib.patches.Patch(color=color_of_state(state)))
 
-  ax.legend(handles=patches, labels=['slurm', 'wasi_\ncomplete', 'wasi_abort', 'idle', 'prolog', 'epilog'], fontsize=12, bbox_to_anchor=(0.955, 0.75))
+  ax.legend(handles=patches, labels=['slurm', 'wasi_\ncomplete', 'wasi_abort', 'idle', 'prolog', 'epilog'], fontsize=12, bbox_to_anchor=(1.135, 0.75))
 
   pyplot.xticks(fontsize=14)
   pyplot.xlabel('Zeit in s', loc='right', fontsize=16)
@@ -111,9 +111,11 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
 
 def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
   nodes_slurm_jobs = {}
+  slurm_jobs_per_node = {}
   node_names = []
   for i in range(0, num_com_nodes):
     nodes_slurm_jobs[f'com{i}'] = []
+    slurm_jobs_per_node[f'com{i}'] = 0
     node_names.append(f'com{i}')
 
   with os.scandir(dir) as entries:
@@ -166,8 +168,11 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
           nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[1][:26] + split_line[1][29:])
           nodes_slurm_jobs[mapping[split_line[0]]][-1]['duration'] = (nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] - 
                                         nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
+      for mapper in mapping.values():
+        slurm_jobs_per_node[mapper] += 1
 
-  return nodes_slurm_jobs
+
+  return nodes_slurm_jobs, slurm_jobs_per_node
 
 def read_prolog_data(dir : str, num_com_nodes : int) -> dict:
   nodes_prologs = {}
@@ -215,7 +220,7 @@ def read_epilog_data(dir : str, num_com_nodes : int) -> dict:
 
   return nodes_epilogs
 
-def analyse_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str, slurm_data : list, prolog_data : list, epilog_data : list) -> tuple:
+def analyse_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str, slurm_data : list, prolog_data : list, epilog_data : list, num_slurm_jobs : int) -> tuple:
   # initialize objects
   tasks_per_period = [{}]
   effective_tasks_per_period = []
@@ -239,7 +244,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                 'state' : 'idle',
                 'duration' : 0.0}]
 
-  if log != "":
+  if log.endswith('log'):
     with open(log, 'r', encoding='utf-8') as logfile:
       lines = list(logfile.readlines())
 
@@ -472,9 +477,9 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     writer.writerow(["time in idle on node relative to observation [%]", f"{idle_usage * 100:5f}"])
     writer.writerow(["number of succesful wasimoff tasks", succesful_tasks])
     writer.writerow(["number of failed wasimoff tasks", failed_tasks])
-    writer.writerow(["number of slurm jobs", len(slurm_data)])
+    writer.writerow(["number of slurm jobs", num_slurm_jobs])
     writer.writerow(["wasimoff throughput on node in [task/s]", f"{(succesful_tasks/observation_duration):7f}"])
-    writer.writerow(["slurm throughput on node in [job/s]", f"{(len(slurm_data)/observation_duration):7f}"])
+    writer.writerow(["slurm throughput on node in [job/s]", f"{(num_slurm_jobs/observation_duration):7f}"])
 
   return succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks
 
@@ -496,7 +501,7 @@ def main():
 
   try:
     tmp = os.scandir(args.wasimoff_logs)
-    num_nodes = len(list(tmp))
+    num_nodes = len(list(filter(lambda x: x.name.endswith('.log'), tmp)))
     tmp.close()
   except NotADirectoryError:
     raise SystemExit('-l argument is required to be a directory')
@@ -507,6 +512,9 @@ def main():
     tmp.close()
   except NotADirectoryError:
     raise SystemExit('-s argument is required to be a directory')
+
+  if num_nodes == 0:
+    num_nodes = 3
 
   # initialize timestamp objects
   observation_start = 0
@@ -535,7 +543,7 @@ def main():
     observation_duration = (observation_end - observation_start).total_seconds()
 
   # read slurm job data
-  slurm_data = read_slurm_data(args.slurm_logs, num_nodes)
+  slurm_data, slurm_jobs_per_node = read_slurm_data(args.slurm_logs, num_nodes)
 
   # read prolog stamps
   prolog_data = read_prolog_data(args.prolog_stamps, num_nodes)
@@ -544,31 +552,30 @@ def main():
   epilog_data = read_epilog_data(args.epilog_stamps, num_nodes)
 
   # read and analyse 
-  with os.scandir(args.wasimoff_logs) as entries:
-    if list(entries) == []:
-      for node_name in slurm_data.keys():
+  entries = list(os.scandir(args.wasimoff_logs))
+  if entries == []:
+    for node_name in slurm_data.keys():
+      succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
+                                                              f"{args.timestamp_file}_{node_name}", slurm_data[node_name],
+                                                              prolog_data[node_name], epilog_data[node_name], slurm_jobs_per_node[node_name])
+      node_time_lines.append(time_line)
+      node_slurm_usage.append(slurm_usage)
+      node_idle_usage.append(idle_usage)
+  else:
+    for entry in entries:
+      if entry.name.endswith('.log'):
         node_name = entry.name.split('_')[-1].split('.')[0]
         succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
-                                                                "", slurm_data[node_name],
-                                                                prolog_data[node_name], epilog_data[node_name])
+                                                                entry.path, slurm_data[node_name],
+                                                                prolog_data[node_name], epilog_data[node_name], slurm_jobs_per_node[node_name])
+        failed_tasks_total += failed_tasks
+        succesful_tasks_total += succesful_tasks
         node_time_lines.append(time_line)
+        node_wasimoff_usage.append(wasimoff_usage)
         node_slurm_usage.append(slurm_usage)
+        node_prolog_usage.append(prolog_usage)
+        node_epilog_usage.append(epilog_usage)
         node_idle_usage.append(idle_usage)
-    else:
-      for entry in entries:
-        if entry.name.endswith('.log'):
-          node_name = entry.name.split('_')[-1].split('.')[0]
-          succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
-                                                                  entry.path, slurm_data[node_name],
-                                                                  prolog_data[node_name], epilog_data[node_name])
-          failed_tasks_total += failed_tasks
-          succesful_tasks_total += succesful_tasks
-          node_time_lines.append(time_line)
-          node_wasimoff_usage.append(wasimoff_usage)
-          node_slurm_usage.append(slurm_usage)
-          node_prolog_usage.append(prolog_usage)
-          node_epilog_usage.append(epilog_usage)
-          node_idle_usage.append(idle_usage)
 
   analyse_cluster(args.timestamp_file.split('.')[0], observation_start, observation_end, succesful_tasks_total, 
           node_wasimoff_usage, node_slurm_usage, node_prolog_usage, node_epilog_usage, node_idle_usage, num_slurm_jobs, failed_tasks_total)
