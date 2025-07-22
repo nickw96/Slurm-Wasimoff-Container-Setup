@@ -35,13 +35,13 @@ def analyse_cluster(report_name : str, observation_start : datetime, observation
     report_str = f"""Report for cluster
 Start of observation:                             {observation_start.isoformat(timespec='microseconds')}
 End of observation:                               {observation_end.isoformat(timespec='microseconds')}
-Total duration of observation [s]:                {observation_duration}
+Total duration of observation [h:m:s]:            {f"{int(observation_duration / 3600):d}:{int(int(observation_duration / 60) % 60):02d}:{int(observation_duration % 60):02d}"}
 Total started wasimoff tasks over whole cluster:  {succesful_tasks_total + failed_tasks_total}
 Succesful wasimoff tasks over whole cluster:      {succesful_tasks_total}
 Failed wasimoff tasks over whole cluster:         {failed_tasks_total}
 Slurm jobs over whole cluster:                    {num_slurm_jobs}
-Slurm job throuput [job/s]:                       {(num_slurm_jobs/observation_duration):7f}
-Wasimoff task throuput [task/s]:                  {(succesful_tasks_total/observation_duration):7f}
+Slurm job throuput [job/h]:                       {(num_slurm_jobs*3600/observation_duration):7f}
+Wasimoff task throuput [task/min]:                {(succesful_tasks_total*60/observation_duration):7f}
 Slurm utilization in [%]:                         {total_slurm_usage*100:5f}
 Wasimoff utilzation in [%]:                       {total_wasimoff_usage*100:5f}
 Cluster in prolog in [%]:                         {total_prolog*100:5f}
@@ -371,7 +371,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
   tmp_list = sorted(sorted_slurm_data + prolog_data + effective_tasks_per_period + epilog_data, key=lambda dic: (dic['start'], dic['end']))
   tmp = 0
   tmp2 = 1
-  while tmp < len(tmp_list):
+  while tmp < len(tmp_list) and tmp_list[tmp]['start'] <= observation_end:
     tmp2 = 1
     if len(time_line) > 0 and (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds() > 0:
       time_line.append({'start' : time_line[-1]['end'],
@@ -479,7 +479,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     failed_tasks = tasks_total - succesful_tasks
 
     writer = csv.writer(csvfile)
-    writer.writerow(["total duration of observation run in [s]", observation_duration])
+    writer.writerow(["total duration of observation run in [h:m:s]", f"{int(observation_duration / 3600):d}:{int(int(observation_duration / 60) % 60):02d}:{int(observation_duration % 60):02d}"])
     writer.writerow(["wasimoff node usage in [%]", f"{wasimoff_usage * 100:5f}"])
     writer.writerow(["wasimoff node usage lost to abortion in [%]", f"{lost_usage * 100:5f}"])
     writer.writerow(["slurm node usage in %", f"{slurm_usage * 100:5f}"])
@@ -489,8 +489,8 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     writer.writerow(["number of succesful wasimoff tasks", succesful_tasks])
     writer.writerow(["number of failed wasimoff tasks", failed_tasks])
     writer.writerow(["number of slurm jobs", num_slurm_jobs])
-    writer.writerow(["wasimoff throughput on node in [task/s]", f"{(succesful_tasks/observation_duration):7f}"])
-    writer.writerow(["slurm throughput on node in [job/s]", f"{(num_slurm_jobs/observation_duration):7f}"])
+    writer.writerow(["wasimoff throughput on node in [task/min]", f"{(succesful_tasks*60/observation_duration):7f}"])
+    writer.writerow(["slurm throughput on node in [job/h]", f"{(num_slurm_jobs*3600/observation_duration):7f}"])
 
   return succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks
 

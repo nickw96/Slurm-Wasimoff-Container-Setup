@@ -35,12 +35,12 @@ def main():
     # csvwriter.writeheader()
     csvwriter.writerow({
     'series' : 'Versuchsreihe',
-      'duration' : 'Gesamtlaufzeit [s]',
+      'duration' : 'Gesamtlaufzeit [h:m:s]',
       'tasks_total' : 'Gesamtmenge\nWasimoff\nTasks',
       'tasks_succeded' : 'Abgeschlossene\nTasks',
       'tasks_failed' : 'Abgebrochene\nTasks',
-      'slurm_throuput' : 'Durchsatz\nSlurm [Job/s]',
-      'wasimoff_throuput' : 'Durchsatz\nWasimoff\n[Task/s]',
+      'slurm_throuput' : 'Durchsatz\nSlurm [Job/h]',
+      'wasimoff_throuput' : 'Durchsatz\nWasimoff\n[Task/min]',
       'slurm_utilization' : 'Clusternutzung\nSlurm [%]',
       'wasimoff_utilization' : 'Clusternutzung\nWasimoff [%]',
       'percentage_in_prolog' : 'Anteil Zeit\nin Prologen\nverbracht',
