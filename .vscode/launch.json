@@ -123,6 +123,30 @@
             "program": "evaluation/calc_percentage_usage_iso-8601.py",
             "console": "integratedTerminal",
             "args": "-t data-ex3/log_2025-07-15_13-14-39_broker/log_2025-07-15_13-14-39.txt -l data-ex3/log_2025-07-15_13-14-39_broker/wasimoff -s data-ex3/log_2025-07-15_13-14-39_broker/slurm -p data-ex3/log_2025-07-15_13-14-39_broker/prolog -e data-ex3/log_2025-07-15_13-14-39_broker/epilog"
+        },
+        {
+            "name": "generate_table.py data-ex1",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/generate_table.py",
+            "console": "integratedTerminal",
+            "args": "-d data-ex1 -s 50 -n 3"
+        },
+        {
+            "name": "generate_table.py data-ex2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/generate_table.py",
+            "console": "integratedTerminal",
+            "args": "-d data-ex2 -s 50 -n 3"
+        },
+        {
+            "name": "generate_table.py data-ex3",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/generate_table.py",
+            "console": "integratedTerminal",
+            "args": "-d data-ex3 -s 50 -n 3"
         }
     ]
 }

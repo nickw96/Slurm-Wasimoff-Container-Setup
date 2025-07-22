@@ -373,7 +373,7 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
   tmp2 = 1
   while tmp < len(tmp_list):
     tmp2 = 1
-    if len(time_line) > 1 and (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds() > 0:
+    if len(time_line) > 0 and (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds() > 0:
       time_line.append({'start' : time_line[-1]['end'],
                 'end' : tmp_list[tmp]['start'],
                 'duration' : (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds(),
@@ -423,6 +423,17 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
       if (tmp_list[tmp]['end'] - tmp_list[tmp]['start']).total_seconds() != 0.0:
         time_line.append(tmp_list[tmp])
     tmp += tmp2
+
+  if time_line[-1]['end'] < observation_end:
+    time_line.append({
+      'start' : time_line[-1]['end'],
+      'end' : observation_end,
+      'state' : 'idle',
+      'duration' : (observation_end - time_line[-1]['end']).total_seconds(),
+    })
+  elif time_line[-1]['end'] > observation_end:
+    time_line[-1]['end'] = observation_end
+    time_line[-1]['duration'] = (time_line[-1]['end'] - time_line[-1]['start']).total_seconds()
 
   i = 0
   for i in range(0,len(time_line) - 1):
