@@ -138,7 +138,7 @@
             "request": "launch",
             "program": "evaluation/generate_table.py",
             "console": "integratedTerminal",
-            "args": "-d data-ex2 -s 50 -n 3"
+            "args": "-d data-ex2 -s 1 -n 3"
         },
         {
             "name": "generate_table.py data-ex3",
