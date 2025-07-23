@@ -259,7 +259,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
             tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] - tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
         elif "Start running task" in line:
           tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'state' : 'wasi_abort'}
-          #tasks_per_period[-1][line_split[-1]]['duration'] = (tasks_per_period[-1][line_split[-1]]['end'] - tasks_per_period[-1][line_split[-1]]['start']).total_seconds()
           tasks_total += 1
         elif "[Wasimoff] starting Provider in Deno" in line:
           tasks_per_period.append({})
@@ -468,7 +467,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           idle_total_duration += time_slot['duration']
       time_line_index += 1
 
-    # assert (wasimoff_total_duration + slurm_total_duration + prolog_total_duration + epilog_total_duration + idle_total_duration) <= observation_duration
     wasimoff_usage = wasimoff_total_duration / observation_duration
     lost_usage = wasimoff_loss_duration / observation_duration
     slurm_usage = slurm_total_duration / observation_duration
