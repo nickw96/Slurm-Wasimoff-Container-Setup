@@ -109,6 +109,30 @@
             "args": "-t data-ex2/log_2025-07-12_15-51-47_tsp12/log_2025-07-12_15-51-47.txt -l data-ex2/log_2025-07-12_15-51-47_tsp12/wasimoff -s data-ex2/log_2025-07-12_15-51-47_tsp12/slurm -p data-ex2/log_2025-07-12_15-51-47_tsp12/prolog -e data-ex2/log_2025-07-12_15-51-47_tsp12/epilog"
         },
         {
+            "name": "calc_percentage_usage_iso-8601.py tsp 13",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/calc_percentage_usage_iso-8601.py",
+            "console": "integratedTerminal",
+            "args": "-t data-ex2/log_2025-07-22_22-06-11_tsp13/log_2025-07-22_22-06-11.txt -l data-ex2/log_2025-07-22_22-06-11_tsp13/wasimoff -s data-ex2/log_2025-07-22_22-06-11_tsp13/slurm -p data-ex2/log_2025-07-22_22-06-11_tsp13/prolog -e data-ex2/log_2025-07-22_22-06-11_tsp13/epilog"
+        },
+        {
+            "name": "calc_percentage_usage_iso-8601.py tsp 12",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/calc_percentage_usage_iso-8601.py",
+            "console": "integratedTerminal",
+            "args": "-t data-ex2/log_2025-07-23_10-58-22_tsp12/log_2025-07-23_10-58-22.txt -l data-ex2/log_2025-07-23_10-58-22_tsp12/wasimoff -s data-ex2/log_2025-07-23_10-58-22_tsp12/slurm -p data-ex2/log_2025-07-23_10-58-22_tsp12/prolog -e data-ex2/log_2025-07-23_10-58-22_tsp12/epilog"
+        },
+        {
+            "name": "calc_percentage_usage_iso-8601.py tsp 13",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/calc_percentage_usage_iso-8601.py",
+            "console": "integratedTerminal",
+            "args": "-t data-ex2/log_2025-07-23_00-28-03_tsp13/log_2025-07-23_00-28-03.txt -l data-ex2/log_2025-07-23_00-28-03_tsp13/wasimoff -s data-ex2/log_2025-07-23_00-28-03_tsp13/slurm -p data-ex2/log_2025-07-23_00-28-03_tsp13/prolog -e data-ex2/log_2025-07-23_00-28-03_tsp13/epilog"
+        },
+        {
             "name": "calc_percentage_usage_iso-8601.py controller",
             "type": "debugpy",
             "request": "launch",
@@ -117,7 +141,7 @@
             "args": "-t data-ex3/log_2025-07-14_11-59-08_controller/log_2025-07-14_11-59-08.txt -l data-ex3/log_2025-07-14_11-59-08_controller/wasimoff -s data-ex3/log_2025-07-14_11-59-08_controller/slurm -p data-ex3/log_2025-07-14_11-59-08_controller/prolog -e data-ex3/log_2025-07-14_11-59-08_controller/epilog"
         },
         {
-            "name": "calc_percentage_usage_iso-8601.py preempt pure",
+            "name": "calc_percentage_usage_iso-8601.py broker",
             "type": "debugpy",
             "request": "launch",
             "program": "evaluation/calc_percentage_usage_iso-8601.py",
