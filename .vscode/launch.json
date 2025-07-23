@@ -171,6 +171,14 @@
             "program": "evaluation/generate_table.py",
             "console": "integratedTerminal",
             "args": "-d data-ex3 -s 50 -n 3"
+        },
+        {
+            "name": "generate_table_ex2.py data-ex2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/generate_table_ex2.py",
+            "console": "integratedTerminal",
+            "args": "-d data-ex2"
         }
     ]
 }

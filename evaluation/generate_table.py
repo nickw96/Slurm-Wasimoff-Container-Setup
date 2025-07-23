@@ -43,9 +43,9 @@ def main():
       'wasimoff_throuput' : 'Durchsatz\nWasimoff\n[Task/min]',
       'slurm_utilization' : 'Clusternutzung\nSlurm [%]',
       'wasimoff_utilization' : 'Clusternutzung\nWasimoff [%]',
-      'percentage_in_prolog' : 'Anteil Zeit\nin Prologen\nverbracht',
-      'percentage_in_epilog' : 'Anteil Zeit\nin Epilogen\nverbracht',
-      'percentage_in_idle' : 'Anteil Zeit\ninaktiv'
+      'percentage_in_prolog' : 'Anteil Zeit\nin Prologen\nverbracht [%]',
+      'percentage_in_epilog' : 'Anteil Zeit\nin Epilogen\nverbracht [%]',
+      'percentage_in_idle' : 'Anteil Zeit\ninaktiv [%]'
     })
     for report in reports:
       with open(report[1], 'r', encoding='utf-8', newline='') as report_file:
@@ -73,6 +73,61 @@ def main():
       'series' : 'Anzahl Slurm Jobs\nin Versuch',
       'duration' : args.slurm_jobs
     })
+  
+  width = 3.0
+
+  # duration
+  # for i in range(0,len(rows)):
+  #   ax.bar(6.0 * i, functools.reduce(lambda acc, x: acc + int(rows[i]['duration'].split(':')[x]) * 60 ** (2 - x),
+  #                                range(0, len(rows[i]['duration'].split(':'))), 0.0),
+  #                                width=width,
+  #                                label=rows[i]['series'])
+
+  # duration
+  fig, ax = pyplot.subplots()
+  translation_table = dict.fromkeys(map(ord, '_-'), '\n')
+  ax.bar([(6.0) * i for i in range(0,len(rows))],
+              [functools.reduce(lambda acc, x: acc + int(row['duration'].split(':')[x]) * 60 ** (2 - x),
+                                 range(0, len(row['duration'].split(':'))), 0.0) for row in rows],
+                                 width=width)
+  ax.set_ylabel('Zeit in s')
+  ax.set_title('Versuchsdauer nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table) for row in rows], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_duration.png', dpi=500)
+
+  # Throughput Slurm
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['slurm_throuput']) for row in rows], width=width)
+  ax.set_ylabel('Durchsatz in Job/h')
+  ax.set_title('Slurm-Durchsatz nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table) for row in rows], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_slurm_throughput.png', dpi=500)
+
+  # Cluster utilization slurm
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['slurm_utilization']) for row in rows], width=width)
+  ax.set_ylabel('Clusternutzung in %')
+  ax.set_title('Slurm-Clusternutzung nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table) for row in rows], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_slurm_utilization.png', dpi=500)
+
+  rows_non_pure = [row for row in rows if not 'pure' in row['series']]
+
+  # Throughput Wasimoff
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows_non_pure))], [float(row['wasimoff_throuput']) for row in rows_non_pure], width=width)
+  ax.set_ylabel('Durchsatz in Task/min')
+  ax.set_title('Wasimoff-Durchsatz nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows_non_pure))], [row['series'].translate(translation_table) for row in rows_non_pure], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_wasimoff_throughput.png', dpi=500)
+
+  # Cluster utilization Wasimoff
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows_non_pure))], [float(row['wasimoff_utilization']) for row in rows_non_pure], width=width)
+  ax.set_ylabel('Clusternutzung in %')
+  ax.set_title('Wasimoff-Clusternutzung nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows_non_pure))], [row['series'].translate(translation_table) for row in rows_non_pure], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_wasimoff_utilization.png', dpi=500)
 
 if __name__ == '__main__':
   main()
