@@ -32,26 +32,26 @@ def main():
     fieldnames = ['series','duration','tasks_total','tasks_succeded','tasks_failed','slurm_throuput','wasimoff_throuput','slurm_utilization','wasimoff_utilization','percentage_in_prolog','percentage_in_epilog','percentage_in_idle']
     rows = []
     csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    # csvwriter.writeheader()
-    csvwriter.writerow({
-    'series' : 'Versuchsreihe',
-      'duration' : 'Gesamtlaufzeit [h:m:s]',
-      'tasks_total' : 'Gesamtmenge\nWasimoff\nTasks',
-      'tasks_succeded' : 'Abgeschlossene\nTasks',
-      'tasks_failed' : 'Abgebrochene\nTasks',
-      'slurm_throuput' : 'Durchsatz\nSlurm [Job/h]',
-      'wasimoff_throuput' : 'Durchsatz\nWasimoff\n[Task/min]',
-      'slurm_utilization' : 'Clusternutzung\nSlurm [%]',
-      'wasimoff_utilization' : 'Clusternutzung\nWasimoff [%]',
-      'percentage_in_prolog' : 'Anteil Zeit\nin Prologen\nverbracht [%]',
-      'percentage_in_epilog' : 'Anteil Zeit\nin Epilogen\nverbracht [%]',
-      'percentage_in_idle' : 'Anteil Zeit\ninaktiv [%]'
-    })
+    csvwriter.writeheader()
+    # csvwriter.writerow({
+    # 'series' : 'Versuchsreihe',
+    #   'duration' : 'Gesamtlaufzeit [h:m:s]',
+    #   'tasks_total' : 'Gesamtmenge Wasimoff Tasks',
+    #   'tasks_succeded' : 'Abgeschlossene Tasks',
+    #   'tasks_failed' : 'Abgebrochene Tasks',
+    #   'slurm_throuput' : 'Durchsatz Slurm [Job/h]',
+    #   'wasimoff_throuput' : 'Durchsatz Wasimoff [Task/min]',
+    #   'slurm_utilization' : 'Clusternutzung Slurm [%]',
+    #   'wasimoff_utilization' : 'Clusternutzung Wasimoff [%]',
+    #   'percentage_in_prolog' : 'Anteil Zeit in Prologen verbracht [%]',
+    #   'percentage_in_epilog' : 'Anteil Zeit in Epilogen verbracht [%]',
+    #   'percentage_in_idle' : 'Anteil Zeit inaktiv [%]'
+    # })
     for report in reports:
       with open(report[1], 'r', encoding='utf-8', newline='') as report_file:
         lines = report_file.readlines()
         rows.append({
-          'series' : report[0].split('_')[-2] + "_" + report[0].split('_')[-1] if report[0].split('_')[-1] == 'pure' else report[0].split('_')[-1],
+          'series' : (report[0].split('_')[-2] + "_" + report[0].split('_')[-1] if report[0].split('_')[-1] == 'pure' else report[0].split('_')[-1]).replace('_','\\_'),
           'duration' : lines[3].split()[-1],
           'tasks_total' : lines[4].split()[-1],
           'tasks_succeded' : lines[5].split()[-1],
@@ -65,14 +65,14 @@ def main():
           'percentage_in_idle' : lines[14].split()[-1]
         })
     csvwriter.writerows(sorted(rows, key=lambda dic: dic['series']))
-    csvwriter.writerow({
-      'series' : 'Anzahl Rechenknoten\nin Cluster',
-      'duration' : args.nodes_num
-    })
-    csvwriter.writerow({
-      'series' : 'Anzahl Slurm Jobs\nin Versuch',
-      'duration' : args.slurm_jobs
-    })
+    # csvwriter.writerow({
+    #   'series' : 'Anzahl Rechenknoten in Cluster',
+    #   'duration' : args.nodes_num
+    # })
+    # csvwriter.writerow({
+    #   'series' : 'Anzahl Slurm Jobs in Versuch',
+    #   'duration' : args.slurm_jobs
+    # })
   
   width = 3.0
 

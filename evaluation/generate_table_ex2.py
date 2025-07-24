@@ -30,35 +30,36 @@ def main():
 
   rows = []
   with open(f"{args.dir}\\{args.dir.split('\\')[-1]}_wasimoff_performance.csv", 'w', newline='', encoding='utf-8') as csvfile:
-    fieldnames = ['series','duration','wasimoff_utilization','wasimoff_util_abort','tasks_succeded','tasks_failed','wasimoff_throuput','percentage_in_prolog','percentage_in_epilog','percentage_in_idle']
+    fieldnames = ['series','duration','wasimoff_utilization','wasimoff_util_abort','tasks_total','tasks_succeded','tasks_failed','wasimoff_throuput','percentage_in_prolog','percentage_in_epilog','percentage_in_idle']
     csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    # csvwriter.writeheader()
-    csvwriter.writerow({
-    'series' : 'Versuchsreihe',
-      'duration' : 'Gesamtlaufzeit [h:m:s]',
-      'wasimoff_utilization' : 'Clusternutzung\nWasimoff [%]',
-      'wasimoff_util_abort' : 'Verlorene Clusternutzung\nWasimoff durch\nAbbruch[%]',
-      'tasks_succeded' : 'Abgeschlossene\nTasks',
-      'tasks_failed' : 'Abgebrochene\nTasks',
-      'wasimoff_throuput' : 'Durchsatz\nWasimoff\n[Task/min]',
-      'percentage_in_prolog' : 'Anteil Zeit\nin Prologen\nverbracht',
-      'percentage_in_epilog' : 'Anteil Zeit\nin Epilogen\nverbracht',
-      'percentage_in_idle' : 'Anteil Zeit\ninaktiv'
-    })
+    csvwriter.writeheader()
+    # csvwriter.writerow({
+    # 'series' : 'Versuchsreihe',
+    #   'duration' : 'Gesamtlaufzeit [h:m:s]',
+    #   'wasimoff_utilization' : 'Clusternutzung Wasimoff [%]',
+    #   'wasimoff_util_abort' : 'Verlorene Clusternutzung Wasimoff durch Abbruch[%]',
+    #   'tasks_succeded' : 'Abgeschlossene Tasks',
+    #   'tasks_failed' : 'Abgebrochene Tasks',
+    #   'wasimoff_throuput' : 'Durchsatz Wasimoff [Task/min]',
+    #   'percentage_in_prolog' : 'Anteil Zeit in Prologen verbracht',
+    #   'percentage_in_epilog' : 'Anteil Zeit in Epilogen verbracht',
+    #   'percentage_in_idle' : 'Anteil Zeit inaktiv'
+    # })
     for report in reports:
       with open(report[1], 'r', encoding='utf-8', newline='') as report_file:
         lines = report_file.readlines()
         rows.append({
-          'series' : report[0].split('_')[-1],
-          'duration' : lines[-12].split(',')[-1],
-          'wasimoff_utilization' : lines[-11].split(',')[-1],
-          'wasimoff_util_abort' : lines[-10].split(',')[-1],
-          'tasks_succeded' : lines[-5].split(',')[-1],
-          'tasks_failed' : lines[-4].split(',')[-1],
-          'wasimoff_throuput' : lines[-2].split(',')[-1],
-          'percentage_in_prolog' : lines[-8].split(',')[-1],
-          'percentage_in_epilog' : lines[-7].split(',')[-1],
-          'percentage_in_idle' : lines[-6].split(',')[-1]
+          'series' : (report[0].split('_')[-1]).replace('_','\\_'),
+          'duration' : lines[-12].split(',')[-1].strip(),
+          'wasimoff_utilization' : lines[-11].split(',')[-1].strip(),
+          'wasimoff_util_abort' : lines[-10].split(',')[-1].strip(),
+          'tasks_total' : str(int(lines[-5].split(',')[-1]) + int(lines[-4].split(',')[-1])),
+          'tasks_succeded' : lines[-5].split(',')[-1].strip(),
+          'tasks_failed' : lines[-4].split(',')[-1].strip(),
+          'wasimoff_throuput' : lines[-2].split(',')[-1].strip(),
+          'percentage_in_prolog' : lines[-8].split(',')[-1].strip(),
+          'percentage_in_epilog' : lines[-7].split(',')[-1].strip(),
+          'percentage_in_idle' : lines[-6].split(',')[-1].strip()
         })
     csvwriter.writerows(sorted(rows, key=lambda dic: dic['series']))
     # csvwriter.writerow({
@@ -82,10 +83,26 @@ def main():
   # Cluster utilization Wasimoff
   fig, ax = pyplot.subplots()
   ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['wasimoff_utilization']) for row in rows], width=width)
-  ax.set_ylabel('Clusternutzung in %')
-  ax.set_title('Wasimoff-Clusternutzung nach Reihe')
+  ax.set_ylabel('Knotennutzung in %')
+  ax.set_title('Wasimoff-Knotennutzung nach Reihe')
   ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_utilization.png', dpi=500)
+
+  # Cluster Wasimoff loss
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['wasimoff_util_abort']) for row in rows], width=width)
+  ax.set_ylabel('Knotennutzung in %')
+  ax.set_title('Verlorene Wasimoff-Nutzung nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_util_abort.png', dpi=500)
+
+  # Cluster idle
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['percentage_in_idle']) for row in rows], width=width)
+  ax.set_ylabel('Knotennutzung in %')
+  ax.set_title('Knoteninaktivität nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_idle.png', dpi=500)
   
 
 if __name__ == '__main__':
