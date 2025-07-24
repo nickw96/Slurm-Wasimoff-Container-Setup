@@ -7,9 +7,12 @@ import pdb
 
 TIMESTAMP_READ_FORMAT='%Y-%m-%d %H:%M:%S'
 
-def analyse_cluster(report_name : str, observation_start : datetime, observation_end : datetime, succesful_tasks_total : int,
-          node_wasimoff_usage : list, node_slurm_usage : list, node_prolog_usage : list, node_epilog_usage : list, 
-          node_idle_usage : list, num_slurm_jobs : int, failed_tasks_total : int):
+def analyse_cluster(report_name : str, observation_start : datetime,
+  observation_end : datetime, succesful_tasks_total : int,
+  node_wasimoff_usage : list, node_slurm_usage : list,
+  node_prolog_usage : list, node_epilog_usage : list, 
+  node_idle_usage : list, num_slurm_jobs : int,
+  failed_tasks_total : int):
   total_wasimoff_usage = 0.0
   total_slurm_usage = 0.0
   total_prolog = 0.0
@@ -65,7 +68,10 @@ def color_of_state(state : str) -> str:
     case 'epilog':
       return 'b'
 
-def print_activity_chart(report_name : str, observation_start : datetime, observation_end : datetime, node_time_lines : list):
+def print_activity_chart(report_name : str,
+  observation_start : datetime,
+  observation_end : datetime,
+  node_time_lines : list):
   fig, ax = pyplot.subplots()
   data_frame_dict = {}
   nodes_num = len(node_time_lines)
@@ -74,9 +80,15 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
 
   max_intervalls = max(map(len,node_time_lines))
   for i in range(0,max_intervalls):
-    data_frame_dict[f'start_{i}']   = functools.reduce(lambda x, y: x + ([node_time_lines[y][i]['start']] if i < len(node_time_lines[y]) else [None]), range(0,nodes_num), [])
-    data_frame_dict[f'end_{i}']   = functools.reduce(lambda x, y: x + ([node_time_lines[y][i]['end']] if i < len(node_time_lines[y]) else [None]), range(0,nodes_num), [])
-    data_frame_dict[f'state_{i}']   = functools.reduce(lambda x, y: x + ([node_time_lines[y][i]['state']] if i < len(node_time_lines[y]) else [None]), range(0,nodes_num), [])
+    data_frame_dict[f'start_{i}'] = functools.reduce(lambda x, y:
+      x + ([node_time_lines[y][i]['start']] if i < len(node_time_lines[y]) else [None]),
+      range(0,nodes_num), [])
+    data_frame_dict[f'end_{i}'] = functools.reduce(lambda x, y:
+      x + ([node_time_lines[y][i]['end']] if i < len(node_time_lines[y]) else [None]),
+      range(0,nodes_num), [])
+    data_frame_dict[f'state_{i}'] = functools.reduce(lambda x, y:
+      x + ([node_time_lines[y][i]['state']] if i < len(node_time_lines[y]) else [None]),
+      range(0,nodes_num), [])
 
   data_frame = pandas.DataFrame(data_frame_dict)
   for i in range(0,max_intervalls):
@@ -86,8 +98,12 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
   
   for index, row in data_frame.iterrows():
     yrange = (index + 1, 0.5)
-    xrange = functools.reduce(lambda x, y: x + ([(row[f'seconds_to_start_{y}'], row[f'task_duration_{y}'])] if not pandas.isnull(row[f'start_{y}']) else []), range(0,max_intervalls), [])
-    colors = functools.reduce(lambda x, y: x + ([color_of_state(row[f'state_{y}'])] if not pandas.isnull(row[f'state_{y}']) else []), range(0,max_intervalls), [])
+    xrange = functools.reduce(lambda x, y:
+      x + ([(row[f'seconds_to_start_{y}'], row[f'task_duration_{y}'])] if not pandas.isnull(row[f'start_{y}']) else []),
+      range(0,max_intervalls), [])
+    colors = functools.reduce(lambda x, y:
+      x + ([color_of_state(row[f'state_{y}'])] if not pandas.isnull(row[f'state_{y}']) else []),
+      range(0,max_intervalls), [])
     ax.broken_barh(xranges=xrange, yrange=yrange, color=colors)
 
   ax.set_yticks(list(map(lambda x: x + 1.25, range(0,nodes_num))))
@@ -95,21 +111,22 @@ def print_activity_chart(report_name : str, observation_start : datetime, observ
 
   patches = []
   for state in ['slurm', 'wasi_complete', 'wasi_abort', 'idle', 'prolog', 'epilog']:
-    patches.append(matplotlib.patches.Patch(color=color_of_state(state)))
+    patches.append(
+      matplotlib.patches.Patch(
+        color=color_of_state(state)))
 
-  ax.legend(handles=patches, labels=['slurm', 'wasi_\ncomplete', 'wasi_abort', 'idle', 'prolog', 'epilog'], fontsize=12, bbox_to_anchor=(1.135, 0.75))
+  ax.legend(handles=patches,
+            labels=['slurm', 'wasi_\ncomplete', 'wasi_abort', 'idle', 'prolog', 'epilog'],
+            fontsize=12, bbox_to_anchor=(1.135, 0.75))
 
   pyplot.xticks(fontsize=14)
   pyplot.xlabel('Zeit in s', loc='right', fontsize=16)
 
   pyplot.gca().invert_yaxis()
-  # pyplot.show()
-  # fig.set_figheight(6)
   fig.set_figwidth(12)
   pyplot.savefig(report_name + '_plot.png', dpi=500)
-  # pyplot.savefig(report_name + '_plot.png')
 
-def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
+def read_slurm_data(dir : str, num_com_nodes : int) -> tuple:
   nodes_slurm_jobs = {}
   slurm_jobs_per_node = {}
   node_names = []
@@ -146,7 +163,8 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
             i += 1
         for i in range(0,num_nodes_in_job):
           split_line = lines[i].split()
-          nodes_slurm_jobs[mapping[split_line[0]]].append({'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
+          nodes_slurm_jobs[mapping[split_line[0]]].append(
+            {'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
         if slurmstepd_lines:
           for slurmstepd_line_index in slurmstepd_lines:
             # get cancellation time
@@ -154,7 +172,7 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
               split_line = lines[slurmstepd_line_index + i].split()
               nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[-5] + '+02:00')
               nodes_slurm_jobs[mapping[split_line[0]]][-1]['duration'] = (nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] - 
-                                        nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
+                nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
             # update mapping within job
             for i in range(num_nodes_in_job * 2, num_nodes_in_job * 3):
               split_line = lines[slurmstepd_line_index + i].split()
@@ -162,12 +180,13 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> dict:
             # add next iteration
             for i in range(num_nodes_in_job, num_nodes_in_job * 2):
               split_line = lines[slurmstepd_line_index + i].split()
-              nodes_slurm_jobs[mapping[split_line[0]]].append({'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
+              nodes_slurm_jobs[mapping[split_line[0]]].append(
+                {'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
         for i in range(-num_nodes_in_job,0):
           split_line = lines[i].split()
           nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[1][:26] + split_line[1][29:])
           nodes_slurm_jobs[mapping[split_line[0]]][-1]['duration'] = (nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] - 
-                                        nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
+            nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
       for mapper in mapping.values():
         slurm_jobs_per_node[mapper] += 1
 
@@ -193,7 +212,8 @@ def read_prolog_data(dir : str, num_com_nodes : int) -> dict:
               nodes_prologs[name].append({'start' : datetime.fromisoformat(tmp[:26] + tmp[29:]), 'state' : 'prolog'})
               tmp = lines[i * 2 + 1].strip()
               nodes_prologs[name][-1]['end'] = datetime.fromisoformat(tmp[:26] + tmp[29:])
-              nodes_prologs[name][-1]['duration'] = (nodes_prologs[name][-1]['end'] - nodes_prologs[name][-1]['start']).total_seconds()
+              nodes_prologs[name][-1]['duration'] = (nodes_prologs[name][-1]['end'] -
+                nodes_prologs[name][-1]['start']).total_seconds()
 
   return nodes_prologs
 
@@ -216,11 +236,15 @@ def read_epilog_data(dir : str, num_com_nodes : int) -> dict:
               nodes_epilogs[name].append({'start' : datetime.fromisoformat(tmp[:26] + tmp[29:]), 'state' : 'epilog'})
               tmp = lines[i * 2 + 1].strip()
               nodes_epilogs[name][-1]['end'] = datetime.fromisoformat(tmp[:26] + tmp[29:])
-              nodes_epilogs[name][-1]['duration'] = (nodes_epilogs[name][-1]['end'] - nodes_epilogs[name][-1]['start']).total_seconds()
+              nodes_epilogs[name][-1]['duration'] = (nodes_epilogs[name][-1]['end'] -
+                nodes_epilogs[name][-1]['start']).total_seconds()
 
   return nodes_epilogs
 
-def analyse_node(observation_start : datetime, observation_end : datetime, observation_duration : timedelta, log : str, slurm_data : list, prolog_data : list, epilog_data : list, num_slurm_jobs : int) -> tuple:
+def analyse_node(observation_start : datetime, observation_end : datetime,
+  observation_duration : timedelta, log : str,
+  slurm_data : list, prolog_data : list, epilog_data : list,
+  num_slurm_jobs : int) -> tuple:
   # initialize objects
   tasks_per_period = [{}]
   effective_tasks_per_period = []
@@ -256,7 +280,8 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
             succesful_tasks += 1
             tasks_per_period[-1][line_split[-2]]['end'] = datetime.fromisoformat(line_split[0])
             tasks_per_period[-1][line_split[-2]]['state'] = 'wasi_complete'
-            tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] - tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
+            tasks_per_period[-1][line_split[-2]]['duration'] = (tasks_per_period[-1][line_split[-2]]['end'] -
+              tasks_per_period[-1][line_split[-2]]['start']).total_seconds()
         elif "Start running task" in line:
           tasks_per_period[-1][line_split[-1]] = {'start' : datetime.fromisoformat(line_split[0]), 'state' : 'wasi_abort'}
           tasks_total += 1
@@ -266,17 +291,20 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           for task_id in tasks_per_period[-1].keys():
             if tasks_per_period[-1][task_id]['state'] == 'wasi_abort':
               tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
-              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] -
+                tasks_per_period[-1][task_id]['start']).total_seconds()
         elif "Stopped wasimoff_provider.service" in line:
           for task_id in tasks_per_period[-1].keys():
             if not 'end' in tasks_per_period[-1][task_id].keys():
               tasks_per_period[-1][task_id]['end'] = datetime.fromisoformat(line_split[0])
-              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] -
+                tasks_per_period[-1][task_id]['start']).total_seconds()
         if i == len(lines) - 1:
           for task_id in tasks_per_period[-1].keys():
             if not 'end' in tasks_per_period[-1][task_id].keys():
               tasks_per_period[-1][task_id]['end'] = observation_end
-              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] - tasks_per_period[-1][task_id]['start']).total_seconds()
+              tasks_per_period[-1][task_id]['duration'] = (tasks_per_period[-1][task_id]['end'] -
+                tasks_per_period[-1][task_id]['start']).total_seconds()
 
     for tasks in tasks_per_period:
       if not tasks == {}:
@@ -290,7 +318,8 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           elif sorted_task_period_complete[tmp]['start'] <= sorted_task_period_complete[tmp - 1]['end']:
             sorted_task_period_complete[tmp - 1]['end'] = sorted_task_period_complete[tmp]['end']
             del sorted_task_period_complete[tmp]
-            sorted_task_period_complete[tmp - 1]['duration'] = (sorted_task_period_complete[tmp - 1]['end'] - sorted_task_period_complete[tmp - 1]['start']).total_seconds()
+            sorted_task_period_complete[tmp - 1]['duration'] = (sorted_task_period_complete[tmp - 1]['end'] -
+              sorted_task_period_complete[tmp - 1]['start']).total_seconds()
           else:
             tmp += 1
         tmp = 1
@@ -300,7 +329,8 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
           elif sorted_task_period_abort[tmp]['start'] <= sorted_task_period_abort[tmp - 1]['end']:
             sorted_task_period_abort[tmp - 1]['end'] = sorted_task_period_abort[tmp]['end']
             del sorted_task_period_abort[tmp]
-            sorted_task_period_abort[tmp - 1]['duration'] = (sorted_task_period_abort[tmp - 1]['end'] - sorted_task_period_abort[tmp - 1]['start']).total_seconds()
+            sorted_task_period_abort[tmp - 1]['duration'] = (sorted_task_period_abort[tmp - 1]['end'] -
+              sorted_task_period_abort[tmp - 1]['start']).total_seconds()
           else:
             tmp += 1
         if len(sorted_task_period_complete) > 0:
@@ -312,37 +342,47 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                 if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
                   raise Exception('there cannot be completed tasks after aborted ones')
                 else:
-                  effective_tasks_per_period.append(sorted_task_period_abort[j])
+                  effective_tasks_per_period.append(
+                    sorted_task_period_abort[j])
                   effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-                  effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                  effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] -
+                    effective_tasks_per_period[-1]['start']).total_seconds()
                   j += 1
               else:
-                effective_tasks_per_period.append(sorted_task_period_abort[j])
+                effective_tasks_per_period.append(
+                  sorted_task_period_abort[j])
                 j += 1
             elif j < len(sorted_task_period_abort):
               if sorted_task_period_complete[i]['start'] < sorted_task_period_abort[j]['start']:
-                effective_tasks_per_period.append(sorted_task_period_complete[i])
+                effective_tasks_per_period.append(
+                  sorted_task_period_complete[i])
                 i += 1
               else:
                 if i > 0 and effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['start']:
                   if effective_tasks_per_period[-1]['end'] > sorted_task_period_abort[j]['end']:
                     raise Exception('there cannot be completed tasks after aborted ones')
                   else:
-                    effective_tasks_per_period.append(sorted_task_period_abort[j])
+                    effective_tasks_per_period.append(
+                      sorted_task_period_abort[j])
                     effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-                    effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                    effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] -
+                      effective_tasks_per_period[-1]['start']).total_seconds()
                     j += 1
                 else:
                   effective_tasks_per_period.append(sorted_task_period_abort[j])
                   j += 1
             else:
               if effective_tasks_per_period[-1]['end'] > sorted_task_period_complete[i]['end']:
-                effective_tasks_per_period.append(sorted_task_period_complete[i])
-                effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-2]))
+                effective_tasks_per_period.append(
+                  sorted_task_period_complete[i])
+                effective_tasks_per_period.append(
+                  deepcopy(effective_tasks_per_period[-2]))
                 effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
-                effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
+                effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] -
+                  effective_tasks_per_period[-3]['start']).total_seconds()
                 effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
+                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] -
+                  effective_tasks_per_period[-1]['start']).total_seconds()
                 i += 1
               else:
                 if len(sorted_task_period_abort) > 0:
@@ -352,7 +392,6 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
                   i += 1
         else:
           effective_tasks_per_period += sorted_task_period_abort
-    # TODO end of task evaluation
     for i in range(0,len(effective_tasks_per_period) - 1):
       assert effective_tasks_per_period[i]['end'] <= effective_tasks_per_period[i + 1]['start']
 
@@ -364,15 +403,21 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     elif sorted_slurm_data[tmp]['start'] <= sorted_slurm_data[tmp - 1]['end']:
       sorted_slurm_data[tmp - 1]['end'] = sorted_slurm_data[tmp]['end']
       del sorted_slurm_data[tmp]
-      sorted_slurm_data[tmp - 1]['duration'] = (sorted_slurm_data[tmp - 1]['end'] - sorted_slurm_data[tmp - 1]['start']).total_seconds()
+      sorted_slurm_data[tmp - 1]['duration'] = (sorted_slurm_data[tmp - 1]['end'] -
+        sorted_slurm_data[tmp - 1]['start']).total_seconds()
     else:
       tmp += 1
-  tmp_list = sorted(sorted_slurm_data + prolog_data + effective_tasks_per_period + epilog_data, key=lambda dic: (dic['start'], dic['end']))
+  tmp_list = sorted(sorted_slurm_data +
+    prolog_data +
+    effective_tasks_per_period +
+    epilog_data,
+    key=lambda dic: (dic['start'], dic['end']))
   tmp = 0
   tmp2 = 1
   while tmp < len(tmp_list) and tmp_list[tmp]['start'] <= observation_end:
     tmp2 = 1
-    if len(time_line) > 0 and (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds() > 0:
+    if len(time_line) > 0 and (tmp_list[tmp]['start'] -
+                              time_line[-1]['end']).total_seconds() > 0:
       time_line.append({'start' : time_line[-1]['end'],
                 'end' : tmp_list[tmp]['start'],
                 'duration' : (tmp_list[tmp]['start'] - time_line[-1]['end']).total_seconds(),
@@ -439,7 +484,8 @@ def analyse_node(observation_start : datetime, observation_end : datetime, obser
     assert time_line[i]['end'] <= time_line[i + 1]['start']
 
   with open(f"{log}.csv", 'w', newline='', encoding='utf-8') as csvfile:
-    fieldnames = ['intervall','state','start','end','duration','duration_perc']
+    fieldnames = ['intervall','state','start',
+                  'end','duration','duration_perc']
     csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
     csvwriter.writeheader()
     time_line_index = 0
@@ -564,9 +610,10 @@ def main():
   entries = list(os.scandir(args.wasimoff_logs))
   if entries == []:
     for node_name in slurm_data.keys():
-      succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
-                                                              f"{args.timestamp_file}_{node_name}", slurm_data[node_name],
-                                                              prolog_data[node_name], epilog_data[node_name], slurm_jobs_per_node[node_name])
+      succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(
+        observation_start, observation_end, observation_duration,
+        f"{args.timestamp_file}_{node_name}", slurm_data[node_name],
+        prolog_data[node_name], epilog_data[node_name], slurm_jobs_per_node[node_name])
       node_time_lines.append(time_line)
       node_slurm_usage.append(slurm_usage)
       node_idle_usage.append(idle_usage)
@@ -574,9 +621,10 @@ def main():
     for entry in entries:
       if entry.name.endswith('.log'):
         node_name = entry.name.split('_')[-1].split('.')[0]
-        succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(observation_start, observation_end, observation_duration,
-                                                                entry.path, slurm_data[node_name],
-                                                                prolog_data[node_name], epilog_data[node_name], slurm_jobs_per_node[node_name])
+        succesful_tasks, time_line, wasimoff_usage, slurm_usage, prolog_usage, epilog_usage, idle_usage, failed_tasks = analyse_node(
+          observation_start, observation_end, observation_duration,
+          entry.path, slurm_data[node_name],
+          prolog_data[node_name], epilog_data[node_name], slurm_jobs_per_node[node_name])
         failed_tasks_total += failed_tasks
         succesful_tasks_total += succesful_tasks
         node_time_lines.append(time_line)
