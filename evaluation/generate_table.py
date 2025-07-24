@@ -129,5 +129,13 @@ def main():
   ax.set_xticks([(6.0) * i for i in range(0,len(rows_non_pure))], [row['series'].translate(translation_table) for row in rows_non_pure], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_wasimoff_utilization.png', dpi=500)
 
+  # Cluster idle
+  fig, ax = pyplot.subplots()
+  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['percentage_in_idle']) for row in rows], width=width)
+  ax.set_ylabel('Clusternutzung in %')
+  ax.set_title('Clusterinaktivität nach Reihe')
+  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_idle.png', dpi=500)
+
 if __name__ == '__main__':
   main()
