@@ -29,7 +29,7 @@ def main():
               break
 
   with open(f"{args.dir}\\{args.dir.split('\\')[-1]}_report_table.csv", 'w', newline='', encoding='utf-8') as csvfile:
-    fieldnames = ['series','duration','tasks_total','tasks_succeded','tasks_failed','slurm_throuput','wasimoff_throuput','slurm_utilization','wasimoff_utilization','percentage_in_prolog','percentage_in_epilog','percentage_in_idle']
+    fieldnames = ['series','duration','tasks_total','tasks_succeded','tasks_failed','slurm_throuput','wasimoff_throuput','slurm_utilization','wasimoff_utilization','wasimoff_util_abort','percentage_in_prolog','percentage_in_epilog','percentage_in_idle']
     rows = []
     csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
     csvwriter.writeheader()
@@ -60,9 +60,10 @@ def main():
           'wasimoff_throuput' : lines[9].split()[-1],
           'slurm_utilization' : lines[10].split()[-1],
           'wasimoff_utilization' : lines[11].split()[-1],
-          'percentage_in_prolog' : lines[12].split()[-1],
-          'percentage_in_epilog' : lines[13].split()[-1],
-          'percentage_in_idle' : lines[14].split()[-1]
+          'wasimoff_util_abort' : lines[12].split()[-1],
+          'percentage_in_prolog' : lines[13].split()[-1],
+          'percentage_in_epilog' : lines[14].split()[-1],
+          'percentage_in_idle' : lines[15].split()[-1]
         })
     csvwriter.writerows(sorted(rows, key=lambda dic: dic['series']))
     # csvwriter.writerow({

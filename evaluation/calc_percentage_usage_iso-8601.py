@@ -370,49 +370,55 @@ def analyse_node(observation_start : datetime, observation_end : datetime,
               effective_tasks_per_period.append(deepcopy(period))
         
         if len(sorted_task_period_abort) > 0:
-          while len(sorted_task_period_abort) > 0:
-            period = sorted_task_period_abort.pop(0)
-            if period['start'] < effective_tasks_per_period[-1]['end']:
-              if period['end'] < effective_tasks_per_period[-1]['end']:
-                effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-1]))
-                period['state'] = 'wasi_abort_com'
-                effective_tasks_per_period.insert(-1, deepcopy(period))
+          if len(effective_tasks_per_period) == 0:
+            effective_tasks_per_period += sorted_task_period_abort
+          else:
+            while len(sorted_task_period_abort) > 0:
+              period = sorted_task_period_abort.pop(0)
+              if period['start'] < effective_tasks_per_period[-1]['end']:
+                if period['end'] < effective_tasks_per_period[-1]['end']:
+                  effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-1]))
+                  period['state'] = 'wasi_abort_com'
+                  effective_tasks_per_period.insert(-1, deepcopy(period))
+                else:
+                  effective_tasks_per_period.append({
+                    'start' : period['start'],
+                    'end' : effective_tasks_per_period[-1]['end'],
+                    'state' : 'wasi_abort_com',
+                    'duration' : (effective_tasks_per_period[-1]['end'] - period['start']).total_seconds()
+                  })
+                  effective_tasks_per_period.append(deepcopy(period))
+                effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
+                effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
+                effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
               else:
-                effective_tasks_per_period.append({
-                  'start' : period['start'],
-                  'end' : effective_tasks_per_period[-1]['end'],
-                  'state' : 'wasi_abort_com',
-                  'duration' : (effective_tasks_per_period[-1]['end'] - period['start']).total_seconds()
-                })
                 effective_tasks_per_period.append(deepcopy(period))
-              effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
-              effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
-              effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-              effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
-            else:
-              effective_tasks_per_period.append(deepcopy(period))
         else:
-          while len(sorted_task_period_complete) > 0:
-            period = sorted_task_period_complete.pop(0)
-            if period['start'] < effective_tasks_per_period[-1]['end']:
-              if period['end'] < effective_tasks_per_period[-1]['end']:
-                effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-1]))
-                period['state'] = 'wasi_abort_com'
-                effective_tasks_per_period.insert(-1, deepcopy(period))
+          if len(effective_tasks_per_period) == 0:
+            effective_tasks_per_period += sorted_task_period_complete
+          else:
+            while len(sorted_task_period_complete) > 0:
+              period = sorted_task_period_complete.pop(0)
+              if period['start'] < effective_tasks_per_period[-1]['end']:
+                if period['end'] < effective_tasks_per_period[-1]['end']:
+                  effective_tasks_per_period.append(deepcopy(effective_tasks_per_period[-1]))
+                  period['state'] = 'wasi_abort_com'
+                  effective_tasks_per_period.insert(-1, deepcopy(period))
+                else:
+                  effective_tasks_per_period.append({
+                    'start' : period['start'],
+                    'end' : effective_tasks_per_period[-1]['end'],
+                    'state' : 'wasi_abort_com',
+                    'duration' : (effective_tasks_per_period[-1]['end'] - period['start']).total_seconds()
+                  })
+                  effective_tasks_per_period.append(deepcopy(period))
+                effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
+                effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
+                effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
+                effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
               else:
-                effective_tasks_per_period.append({
-                  'start' : period['start'],
-                  'end' : effective_tasks_per_period[-1]['end'],
-                  'state' : 'wasi_abort_com',
-                  'duration' : (effective_tasks_per_period[-1]['end'] - period['start']).total_seconds()
-                })
                 effective_tasks_per_period.append(deepcopy(period))
-              effective_tasks_per_period[-3]['end'] = effective_tasks_per_period[-2]['start']
-              effective_tasks_per_period[-3]['duration'] = (effective_tasks_per_period[-3]['end'] - effective_tasks_per_period[-3]['start']).total_seconds()
-              effective_tasks_per_period[-1]['start'] = effective_tasks_per_period[-2]['end']
-              effective_tasks_per_period[-1]['duration'] = (effective_tasks_per_period[-1]['end'] - effective_tasks_per_period[-1]['start']).total_seconds()
-            else:
-              effective_tasks_per_period.append(deepcopy(period))
     
     for i in range(0,len(effective_tasks_per_period) - 1):
       assert effective_tasks_per_period[i]['end'] <= effective_tasks_per_period[i + 1]['start']
