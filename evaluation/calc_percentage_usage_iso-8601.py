@@ -1,5 +1,5 @@
 import matplotlib.patches
-import os, sys, argparse, csv, matplotlib, pandas, numpy, functools, locale
+import os, sys, argparse, csv, matplotlib, pandas, numpy, functools, locale, re
 import matplotlib.pyplot as pyplot
 from datetime import datetime, timedelta
 from copy import deepcopy
@@ -40,6 +40,7 @@ def analyse_cluster(report_name : str, observation_start : datetime,
     report_str = f"""Report for cluster
 Start of observation:                             {observation_start.isoformat(timespec='microseconds')}
 End of observation:                               {observation_end.isoformat(timespec='microseconds')}
+Total duration of observation [s]:                {observation_duration}
 Total duration of observation [h:m:s]:            {f"{int(observation_duration / 3600):d}:{int(int(observation_duration / 60) % 60):02d}:{int(observation_duration % 60):02d}"}
 Total started wasimoff tasks over whole cluster:  {succesful_tasks_total + failed_tasks_total}
 Succesful wasimoff tasks over whole cluster:      {succesful_tasks_total}
@@ -179,14 +180,24 @@ def read_slurm_data(dir : str, num_com_nodes : int) -> tuple:
               nodes_slurm_jobs[mapping[split_line[0]]][-1]['duration'] = (nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] - 
                 nodes_slurm_jobs[mapping[split_line[0]]][-1]['start']).total_seconds()
             # update mapping within job
-            for i in range(num_nodes_in_job * 2, num_nodes_in_job * 3):
-              split_line = lines[slurmstepd_line_index + i].split()
-              mapping[split_line[0]] = split_line[1]
+            nodes_changed = 0
+            i = slurmstepd_line_index
+            while i < len(lines) and nodes_changed < num_nodes_in_job:
+              split_line = lines[i].split()
+              if len(split_line) == 2 and 'com' in split_line[1]:
+                nodes_changed += 1
+                mapping[split_line[0]] = split_line[1]
+              i += 1
             # add next iteration
-            for i in range(num_nodes_in_job, num_nodes_in_job * 2):
-              split_line = lines[slurmstepd_line_index + i].split()
-              nodes_slurm_jobs[mapping[split_line[0]]].append(
-                {'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
+            nodes_changed = 0
+            i = slurmstepd_line_index
+            while i < len(lines) and nodes_changed < num_nodes_in_job:
+              split_line = lines[i].split()
+              if len(split_line) == 2 and re.search('[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{9}\+[0-9]{2}:[0-9]{2}', split_line[1]) != None:
+                nodes_changed += 1
+                nodes_slurm_jobs[mapping[split_line[0]]].append(
+                  {'start' : datetime.fromisoformat(split_line[1][:26] + split_line[1][29:]), 'state' : 'slurm'})
+              i += 1
         for i in range(-num_nodes_in_job,0):
           split_line = lines[i].split()
           nodes_slurm_jobs[mapping[split_line[0]]][-1]['end'] = datetime.fromisoformat(split_line[1][:26] + split_line[1][29:])

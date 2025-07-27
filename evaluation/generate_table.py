@@ -52,18 +52,18 @@ def main():
         lines = report_file.readlines()
         rows.append({
           'series' : (report[0].split('_')[-2] + "_" + report[0].split('_')[-1] if report[0].split('_')[-1] == 'pure' else report[0].split('_')[-1]).replace('_','\\_'),
-          'duration' : lines[3].split()[-1],
-          'tasks_total' : lines[4].split()[-1],
-          'tasks_succeded' : lines[5].split()[-1],
-          'tasks_failed' : lines[6].split()[-1],
-          'slurm_throuput' : lines[8].split()[-1],
-          'wasimoff_throuput' : lines[9].split()[-1],
-          'slurm_utilization' : lines[10].split()[-1],
-          'wasimoff_utilization' : lines[11].split()[-1],
-          'wasimoff_util_abort' : lines[12].split()[-1],
-          'percentage_in_prolog' : lines[13].split()[-1],
-          'percentage_in_epilog' : lines[14].split()[-1],
-          'percentage_in_idle' : lines[15].split()[-1]
+          'duration' : lines[4].split()[-1],
+          'tasks_total' : lines[5].split()[-1],
+          'tasks_succeded' : lines[6].split()[-1],
+          'tasks_failed' : lines[7].split()[-1],
+          'slurm_throuput' : lines[9].split()[-1],
+          'wasimoff_throuput' : lines[10].split()[-1],
+          'slurm_utilization' : lines[11].split()[-1],
+          'wasimoff_utilization' : lines[12].split()[-1],
+          'wasimoff_util_abort' : lines[13].split()[-1],
+          'percentage_in_prolog' : lines[14].split()[-1],
+          'percentage_in_epilog' : lines[15].split()[-1],
+          'percentage_in_idle' : lines[16].split()[-1]
         })
     csvwriter.writerows(sorted(rows, key=lambda dic: dic['series']))
     # csvwriter.writerow({

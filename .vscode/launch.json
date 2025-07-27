@@ -149,12 +149,28 @@
             "args": "-t data-ex3/log_2025-07-15_13-14-39_broker/log_2025-07-15_13-14-39.txt -l data-ex3/log_2025-07-15_13-14-39_broker/wasimoff -s data-ex3/log_2025-07-15_13-14-39_broker/slurm -p data-ex3/log_2025-07-15_13-14-39_broker/prolog -e data-ex3/log_2025-07-15_13-14-39_broker/epilog"
         },
         {
+            "name": "calc_percentage_usage_iso-8601.py control preempt",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/calc_percentage_usage_iso-8601.py",
+            "console": "integratedTerminal",
+            "args": "-t data-ex1-control/log_2025-07-25_13-58-25_preempt_pure/log_2025-07-25_13-58-25.txt -l data-ex1-control/log_2025-07-25_13-58-25_preempt_pure/wasimoff -s data-ex1-control/log_2025-07-25_13-58-25_preempt_pure/slurm -p data-ex1-control/log_2025-07-25_13-58-25_preempt_pure/prolog -e data-ex1-control/log_2025-07-25_13-58-25_preempt_pure/epilog"
+        },
+        {
             "name": "generate_table.py data-ex1",
             "type": "debugpy",
             "request": "launch",
             "program": "evaluation/generate_table.py",
             "console": "integratedTerminal",
             "args": "-d data-ex1 -s 50 -n 3"
+        },
+        {
+            "name": "generate_table.py data-ex1 control",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "evaluation/generate_table.py",
+            "console": "integratedTerminal",
+            "args": "-d data-ex1-control -s 50 -n 3"
         },
         {
             "name": "generate_table.py data-ex2",
