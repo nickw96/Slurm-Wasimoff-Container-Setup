@@ -65,7 +65,7 @@ def main():
           'percentage_in_epilog' : lines[15].split()[-1],
           'percentage_in_idle' : lines[16].split()[-1]
         })
-    csvwriter.writerows(sorted(rows, key=lambda dic: dic['series']))
+    csvwriter.writerows(sorted(rows, key=lambda dic: dic['series'].replace('\\_pure','_').replace('-','_')))
     # csvwriter.writerow({
     #   'series' : 'Anzahl Rechenknoten in Cluster',
     #   'duration' : args.nodes_num
@@ -76,6 +76,8 @@ def main():
     # })
   
   width = 3.0
+
+  sorted_rows = sorted(rows, key=lambda dic: dic['series'].replace('\\_pure','_').replace('-','_'))
 
   # duration
   # for i in range(0,len(rows)):
@@ -88,32 +90,32 @@ def main():
   fig, ax = pyplot.subplots()
   translation_table = dict.fromkeys(map(ord, '_-'), '\n')
   translation_table_backslash = dict.fromkeys(map(ord, '\\'), '')
-  ax.bar([(6.0) * i for i in range(0,len(rows))],
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))],
               [functools.reduce(lambda acc, x: acc + int(row['duration'].split(':')[x]) * 60 ** (2 - x),
-                                 range(0, len(row['duration'].split(':'))), 0.0) for row in rows],
+                                 range(0, len(row['duration'].split(':'))), 0.0) for row in sorted_rows],
                                  width=width)
   ax.set_ylabel('Zeit in s')
   ax.set_title('Versuchsdauer nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_duration.png', dpi=500)
 
   # Throughput Slurm
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['slurm_throuput']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['slurm_throuput']) for row in sorted_rows], width=width)
   ax.set_ylabel('Durchsatz in Job/h')
   ax.set_title('Slurm-Durchsatz nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_slurm_throughput.png', dpi=500)
 
   # Cluster utilization slurm
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['slurm_utilization']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['slurm_utilization']) for row in sorted_rows], width=width)
   ax.set_ylabel('Clusternutzung in %')
   ax.set_title('Slurm-Clusternutzung nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_slurm_utilization.png', dpi=500)
 
-  rows_non_pure = [row for row in rows if not 'pure' in row['series']]
+  rows_non_pure = [row for row in sorted_rows if not 'pure' in row['series']]
 
   # Throughput Wasimoff
   fig, ax = pyplot.subplots()
@@ -133,10 +135,10 @@ def main():
 
   # Cluster idle
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['percentage_in_idle']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['percentage_in_idle']) for row in sorted_rows], width=width)
   ax.set_ylabel('Clusternutzung in %')
   ax.set_title('Clusterinaktivität nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'].translate(translation_table_backslash).translate(translation_table) for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_idle.png', dpi=500)
 
 if __name__ == '__main__':

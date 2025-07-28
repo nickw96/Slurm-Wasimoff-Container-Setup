@@ -61,7 +61,7 @@ def main():
           'percentage_in_epilog' : lines[-7].split(',')[-1].strip(),
           'percentage_in_idle' : lines[-6].split(',')[-1].strip()
         })
-    csvwriter.writerows(sorted(rows, key=lambda dic: dic['series']))
+    csvwriter.writerows(sorted(rows, key=lambda dic: dic['series'].replace('\\_pure','_').replace('-','_')))
     # csvwriter.writerow({
     #   'series' : 'Anzahl Rechenknoten\nin Cluster',
     #   'duration' : args.nodes_num
@@ -71,37 +71,39 @@ def main():
     #   'duration' : args.slurm_jobs
     # })
 
+  sorted_rows = sorted(rows, key=lambda dic: dic['series'].replace('\\_pure','_').replace('-','_'))
+
   width = 3.0
   # Throughput Wasimoff
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['wasimoff_throuput']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['wasimoff_throuput']) for row in sorted_rows], width=width)
   ax.set_ylabel('Durchsatz in Task/min')
   ax.set_title('Wasimoff-Durchsatz nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'] for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_throughput.png', dpi=500)
 
   # Cluster utilization Wasimoff
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['wasimoff_utilization']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['wasimoff_utilization']) for row in sorted_rows], width=width)
   ax.set_ylabel('Knotennutzung in %')
   ax.set_title('Wasimoff-Knotennutzung nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'] for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_utilization.png', dpi=500)
 
   # Cluster Wasimoff loss
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['wasimoff_util_abort']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['wasimoff_util_abort']) for row in sorted_rows], width=width)
   ax.set_ylabel('Knotennutzung in %')
   ax.set_title('Verlorene Wasimoff-Nutzung nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'] for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_util_abort.png', dpi=500)
 
   # Cluster idle
   fig, ax = pyplot.subplots()
-  ax.bar([(6.0) * i for i in range(0,len(rows))], [float(row['percentage_in_idle']) for row in rows], width=width)
+  ax.bar([(6.0) * i for i in range(0,len(sorted_rows))], [float(row['percentage_in_idle']) for row in sorted_rows], width=width)
   ax.set_ylabel('Knotennutzung in %')
   ax.set_title('Knoteninaktivität nach Reihe')
-  ax.set_xticks([(6.0) * i for i in range(0,len(rows))], [row['series'] for row in rows], fontsize=7)
+  ax.set_xticks([(6.0) * i for i in range(0,len(sorted_rows))], [row['series'] for row in sorted_rows], fontsize=7)
   pyplot.savefig(f'{args.dir}\\{args.dir.split('\\')[-1]}_node_wasimoff_idle.png', dpi=500)
   
 
