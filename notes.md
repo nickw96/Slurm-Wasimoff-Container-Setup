@@ -29,3 +29,12 @@ Erste Versuche:
 
 Test der Slurmkonfigurationen offen
 - Speichereinstellungen kritisch, evtl. zu wenig Speicher für Jobs verfügbar bei Oversubscribe
+
+Erster Erfolg!
+Für Gang Scheduling müssen sich überlappende Epochen zusammengefasst werden
+
+Bzgl. Gang Scheduling: Suspended Jobs prüfen, ob Knoten beteiligt ist; falls ja, keinen Wasimoff provider starten -> Hat Anton geprüft, in Evaluation dann sachlich erklären, was das Problem ist
+Problematik des Epilogs: Länge des Programmvektors unbekannt vor aufruf, zu Laufzeit bekannt; functools, um Einträge zusammenzufassen
+
+Beobachtung bei Preempt:
+- Requeueing kommt sehr selten vor -> mögliche Erklärung dadurch, dass alle Jobs pausenlos zu Beginn eingereicht werden und somit es unwahrscheinlich ist, dass Base-Prio vor High-Prio kommt, sobald einmal die Jobs laufen
